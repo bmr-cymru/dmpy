@@ -155,28 +155,28 @@ DmTimestamp_delta(DmTimestampObject *self, PyObject *args)
     return Py_BuildValue("i", dm_timestamp_delta(self->ob_ts, to->ob_ts));
 }
 
-#define DMTASK_copy__doc__ \
+#define DMTIMESTAMP_copy__doc__ \
 "Copy this DmTimestamp."
 
-#define DMTASK_get__doc__ \
+#define DMTIMESTAMP_get__doc__ \
 "Update this DmTimestamp to the current time."
 
-#define DMTASK_compare__doc__ \
+#define DMTIMESTAMP_compare__doc__ \
 "Compare two DmTimestamp objects."
 
-#define DMTASK_delta__doc__ \
+#define DMTIMESTAMP_delta__doc__ \
 "Return the absolute difference, in nanoseconds, between two " \
 "DmTimestamp objects."
 
 static PyMethodDef DmTimestamp_methods[] = {
     {"copy", (PyCFunction)DmTimestamp_copy, METH_VARARGS,
-        PyDoc_STR(DMTASK_copy__doc__)},
+        PyDoc_STR(DMTIMESTAMP_copy__doc__)},
     {"get", (PyCFunction)DmTimestamp_get, METH_NOARGS,
-        PyDoc_STR(DMTASK_get__doc__)},
+        PyDoc_STR(DMTIMESTAMP_get__doc__)},
     {"compare", (PyCFunction)DmTimestamp_compare, METH_VARARGS,
-        PyDoc_STR(DMTASK_compare__doc__)},
+        PyDoc_STR(DMTIMESTAMP_compare__doc__)},
     {"delta", (PyCFunction)DmTimestamp_delta, METH_VARARGS,
-        PyDoc_STR(DMTASK_delta__doc__)},
+        PyDoc_STR(DMTIMESTAMP_delta__doc__)},
     {NULL, NULL}
 };
 
