@@ -2168,3 +2168,4 @@ initdmpy(void)
     return (void) dmpy_exec(m);
 }
 #endif /* PY_MAJOR_VERSION >= 3 */
+/* # vim: set et ts=4 sw=4 : */
