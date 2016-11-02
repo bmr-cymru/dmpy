@@ -1,7 +1,8 @@
 /*
+ * Copyright (C) 2016 Red Hat, Inc., Bryn M. Reeves <bmr@redhat.com>
+ *
  * dmpy - Python device-mapper interface.
  *
- * Copyright (C) 2016 Red Hat, Inc., Bryn M. Reeves <bmr@redhat.com>
  */
 
 #include "Python.h"
