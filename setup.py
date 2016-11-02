@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
-from distutils.core import setup, Extension
+import six
+from setuptools import setup, Extension
 
 dmpy_module = Extension('dmpy',
                         libraries=['devmapper'],
