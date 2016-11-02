@@ -881,8 +881,7 @@ DmTask_set_newname(DmTaskObject *self, PyObject *args)
     }
 
     if (!*newname) {
-        PyErr_Format(PyExc_ValueError, "Non empty new name is required.",
-                     newname);
+        PyErr_SetString(PyExc_ValueError, "Non empty new name is required.");
         goto fail;
     }
 
