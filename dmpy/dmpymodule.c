@@ -1374,7 +1374,7 @@ DmTask_get_errno(DmTaskObject *self, PyObject *args)
 
 #define DMTASK_get_uuid__doc__                                          \
 "Get the dm device's UUID based on the value of the mangling mode set " \
-"during preceding dm_task_run call.\n. To force either mangled or "     \
+"during preceding dm_task_run call.\nTo force either mangled or "     \
 "unmangled output, set the `mangle` kwarg to '1' or '0' respectively."
 
 #define DMTASK_get_deps__doc__ \
