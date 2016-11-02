@@ -2132,6 +2132,7 @@ dmpy_exec(PyObject *m)
     return -1;
 }
 
+#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef_Slot dmpy_slots[] = {
     {Py_mod_exec, dmpy_exec},
     {0, NULL},
@@ -2148,11 +2149,22 @@ static struct PyModuleDef dmpymodule = {
     NULL,
     NULL
 };
+#endif /* PY_MAJOR_VERSION >= 3 */
 
-/* Export function for the module (*must* be called PyInit_dmpy) */
-
+#if PY_MAJOR_VERSION >= 3
+/* Export function for the py3 module (*must* be called PyInit_dmpy) */
 PyMODINIT_FUNC
 PyInit_dmpy(void)
 {
     return PyModuleDef_Init(&dmpymodule);
 }
+#else
+/* Export function for the py2 module (*must* be called initdmpy) */
+PyMODINIT_FUNC
+initdmpy(void)
+{
+    PyObject *m;
+    m = Py_InitModule3("dmpy", dmpy_methods, dmpy__doc__);
+    return (void) dmpy_exec(m);
+}
+#endif /* PY_MAJOR_VERSION >= 3 */
