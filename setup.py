@@ -13,6 +13,7 @@ setup(name='dmpy',
       author_email='bmr@redhat.com',
       url='https://github.com/bmr-cymru/dmpy',
       license="GPLv2",
+      test_suite="tests",
       #packages=['dmpy'],
       ext_modules=[dmpy_module]
      )
