@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import six
 from setuptools import setup, Extension
 
 dmpy_module = Extension('dmpy',
