@@ -534,7 +534,7 @@ static PyTypeObject DmInfo_Type = {
 typedef struct {
     PyObject_HEAD
     struct dm_task *ob_dmt;
-    DmCookieObject *cookie;
+    DmCookieObject *ob_cookie;
 } DmTaskObject;
 
 static PyTypeObject DmTask_Type;
@@ -549,7 +549,7 @@ DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTuple(args, "i:__init__", &type))
         return -1;
 
-    self->cookie = NULL;
+    self->ob_cookie = NULL;
 
     if (!(self->ob_dmt = dm_task_create(type))) {
         /* FIXME: use dm_task_get_errno */
@@ -572,7 +572,7 @@ DmTask_dealloc(DmTaskObject *self)
         dm_task_destroy(self->ob_dmt);
     self->ob_dmt = NULL;
 
-    Py_XDECREF(self->cookie);
+    Py_XDECREF(self->ob_cookie);
 
     PyObject_Del(self);
 }
@@ -1057,7 +1057,7 @@ DmTask_set_cookie(DmTaskObject *self, PyObject *args)
 
     /* The DmTask holds a reference to the cookie object. */
     Py_INCREF(cookie);
-    self->cookie = cookie;
+    self->ob_cookie = cookie;
 
     if (!dm_task_set_cookie(self->ob_dmt, &cookie->ob_value, flags)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask cookie.");
