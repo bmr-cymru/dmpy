@@ -720,7 +720,7 @@ DmTask_get_deps(DmTaskObject *self, PyObject *args)
 }
 
 static PyObject *
-_dm_build_versions_dict(struct dm_versions *target)
+_DmTask_build_versions_dict(struct dm_versions *target)
 {
     PyObject *versions_dict = NULL, *name, *value;
     struct dm_versions *last_target;
@@ -780,7 +780,7 @@ DmTask_get_versions(DmTaskObject *self, PyObject *args)
                         "from device-mapper");
         return NULL;
     }
-    return _dm_build_versions_dict(versions);
+    return _DmTask_build_versions_dict(versions);
 }
 
 static PyObject *
