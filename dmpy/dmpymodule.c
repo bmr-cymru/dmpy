@@ -811,7 +811,7 @@ DmTask_get_name(DmTaskObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-_dm_build_name_list(struct dm_names *names)
+_DmTask_build_name_list(struct dm_names *names)
 {
     PyObject *name_list = NULL;
     unsigned next = 0;
@@ -850,7 +850,7 @@ DmTask_get_names(DmTaskObject *self, PyObject *args)
         return Py_None;
     }
 
-    return _dm_build_name_list(names);
+    return _DmTask_build_name_list(names);
 }
 
 static PyObject *
