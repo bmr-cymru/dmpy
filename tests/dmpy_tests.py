@@ -16,8 +16,8 @@
 
 import unittest
 import shlex
-from os import readlink
-from os.path import exists
+from os import readlink, unlink
+from os.path import exists, join
 from subprocess import Popen, PIPE, STDOUT
 
 # Non-exported device-mapper constants: used for tests only.
@@ -83,6 +83,28 @@ def _get_driver_version_from_dmsetup():
         if not line.startswith("Driver version"):
             continue
         return line.split(":")[1].lstrip()
+
+
+def _create_loopback(path, size):
+    loop_file = join(path, "dmpy-test-img0")
+    r = _get_cmd_output("dd if=/dev/zero of=%s bs=%d count=1" %
+                        (loop_file, size))
+    if r[0]:
+        raise OSError("Failed to create image file.")
+    r = _get_cmd_output("losetup -f")
+    if r[0]:
+        raise OSError("Failed to find free loop device.")
+    device = r[1].strip()
+    r = _get_cmd_output("losetup %s %s" % (device, loop_file))
+    return (device, loop_file)
+
+
+def _remove_loopback(loop_device):
+    device, loop_file = loop_device
+    r = _get_cmd_output("losetup -d %s" % device)
+    if r[0]:
+        raise OSError("Failed to remove loop device.")
+    unlink(loop_file)
 
 
 class DmpyTests(unittest.TestCase):
