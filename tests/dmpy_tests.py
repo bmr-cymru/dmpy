@@ -1,6 +1,8 @@
 import unittest
 
+# Non-exported device-mapper constants: used for tests only.
 DM_NAME_LEN=128  # includes NULL
+DM_MAX_UUID_PREFIX_LEN=15
 
 def _get_dm_major_from_dm_0_sysfs():
     dm0_sysfs_path = "/sys/block/dm-0/dev"
@@ -112,6 +114,24 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         with self.assertRaises(ValueError) as cm:
             dm.set_sysfs_dir("./tests/sys")
+
+    def test_set_uuid_prefix_too_long(self):
+        # Assert that dmpy.set_uuid_prefix() with a prefix length
+        # > DM_MAX_UUID_PREFIX_LEN raises ValueError.
+        import dmpy as dm
+        with self.assertRaises(ValueError) as cm:
+            dm.set_uuid_prefix("X" * (DM_MAX_UUID_PREFIX_LEN + 1))
+
+    def test_set_get_uuid_prefix(self):
+        # Assert that the expected prefix is returned following a set,
+        # and that the default is `LVM-`.
+        # FIXME: verify that the prefix is used in commands.
+        import dmpy as dm
+        default_uuid_prefix = "LVM-"
+        new_uuid_prefix = "QUX-"
+        self.assertTrue(dm.get_uuid_prefix() == default_uuid_prefix)
+        self.assertTrue(dm.set_uuid_prefix(new_uuid_prefix))
+        self.assertTrue(dm.get_uuid_prefix() == new_uuid_prefix)
 
     def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
