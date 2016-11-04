@@ -57,6 +57,24 @@ class DmpyTests(unittest.TestCase):
         # Assert that valid dm major numbers return True.
         self.assertTrue(dm.is_dm_major(_get_dm_major()))
 
+    def test_update_nodes(self):
+        pass  # FIXME: how to test?
+
+    def test_set_get_name_mangling_mode(self):
+        # Ensure that we get the same name_mangling_mode back as we set, and
+        # that the default mode is as expected.
+        import dmpy as dm
+        # Assert that dm.STRING_MANGLING_AUTO is default.
+        initial_mode = dm.get_name_mangling_mode()
+        self.assertTrue(initial_mode == dm.STRING_MANGLING_AUTO)
+        # Assert that we get each mangline mode back as expected.
+        self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_NONE))
+        self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_NONE)
+        self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_AUTO))
+        self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_AUTO)
+        self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_HEX))
+        self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_HEX)
+
     def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
         import dmpy as dm
