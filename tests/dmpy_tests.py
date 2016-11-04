@@ -54,7 +54,7 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(runnable)
         self.assertRaises(TypeError, runnable)
 
-    def test_empty_get_name(self):
+    def test_empty_get_name_raises(self):
         # dm_task_get_name() returns the name from the results of an ioctl.
         # If no ioctl has been peformed (or if the ioctl did not return a
         # device name), then attempting to call dm_task_get_name() will
