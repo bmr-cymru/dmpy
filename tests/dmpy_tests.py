@@ -94,6 +94,25 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dm.set_dev_dir(reset_dev_dir))
         self.assertTrue(dm.get_dev_dir() == default_dev_dir_get)
 
+    def test_set_get_sysfs_dir(self):
+        # Ensure that we get the same dev_dir back as we set, and
+        # that the default directory is as expected.
+        import dmpy as dm
+        # Default device directory. If your libdevmapper was compiled with
+        # a different value, change the definition of `default_dev_dir_get`.
+        default_sysfs_dir_get = "/sys/"
+        # Assert that default_sysfs_dir_get is default.
+        initial_sysfs_dir = dm.get_sysfs_dir()
+        # Assert that the expected string is returned following a set.
+        self.assertTrue(initial_sysfs_dir == default_sysfs_dir_get)
+
+    def test_set_sysfs_dir_non_abs_path(self):
+        # Assert that attampting to set a non-absolute sysfs path raises a
+        # TypeError exception.
+        import dmpy as dm
+        with self.assertRaises(ValueError) as cm:
+            dm.set_sysfs_dir("./tests/sys")
+
     def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
         import dmpy as dm
