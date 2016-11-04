@@ -136,7 +136,7 @@ class DmpyTests(unittest.TestCase):
             dmt.set_newname(dm_name_null)
 
     def test_set_newname_empty_name(self):
-        # Assert that ValueError is raised when name is NULL.
+        # Assert that ValueError is raised when name is "".
         import dmpy as dm
         dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
         dm_name_empty = ""
