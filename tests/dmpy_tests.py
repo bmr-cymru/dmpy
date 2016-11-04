@@ -2,6 +2,36 @@ import unittest
 
 DM_NAME_LEN=128  # includes NULL
 
+def _get_dm_major_from_dm_0_sysfs():
+    dm0_sysfs_path = "/sys/block/dm-0/dev"
+    major = None
+    minor = None
+    with open(dm0_sysfs_path, "r") as f:
+        (major, minor) = f.read().strip().split(":")
+    return int(major)
+
+def _get_dm_major_from_proc():
+    proc_devices_path = "/proc/devices"
+    with open(proc_devices_path) as f:
+        block_seen = False
+        for line in f.readlines():
+            if "Block" in line:
+                block_seen = True
+                continue
+            if block_seen and "device-mapper" in line:
+                (major, name) = line.split(" ")
+                break
+    return int(major)
+
+def _get_dm_major():
+    try:
+        return _get_dm_major_from_dm_0_sysfs()
+    except:
+        try:
+            return _get_dm_major_from_proc()
+        except:
+            return 253
+
 class DmpyTests(unittest.TestCase):
 
     def test_import(self):
@@ -16,6 +46,15 @@ class DmpyTests(unittest.TestCase):
         # Assert the expected major/minor version values (good since Nov 2005).
         libdm_major_minor = "1.02"
         self.assertTrue(dm.get_library_version().startswith(libdm_major_minor))
+
+    def test_is_dm_major(self):
+        import dmpy as dm
+        # Assert that invalid dm major numbers return False.
+        self.assertFalse(dm.is_dm_major(0))
+        self.assertFalse(dm.is_dm_major(1))
+        self.assertFalse(dm.is_dm_major(-1))
+        # Assert that valid dm major numbers return True.
+        self.assertTrue(dm.is_dm_major(_get_dm_major()))
 
     def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
