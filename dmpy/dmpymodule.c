@@ -1946,6 +1946,14 @@ _dmpy_is_dm_major(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+_dmpy_lib_release(PyObject *self, PyObject *args)
+{
+    dm_lib_release();
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject *
 _dmpy_hold_control_dev(PyObject *self, PyObject *args)
 {
     int hold_open;
@@ -2047,6 +2055,10 @@ _dmpy_dump_memory(PyObject *self, PyObject *args)
 "Returns `True` if the given major number belongs to device-mapper, or " \
 "`False` otherwise."
 
+#define DMPY_lib_release__doc__ \
+"Release libdevmapper library resources and close the control file " \
+"descriptor (unless `hold_control_dev` has been set)."
+
 #define DMPY_hold_control_dev__doc__ \
 "Enable holding the device-mapper control device open between ioctls:\n" \
 "an optimisation for clients making repeated dm-ioctl calls."
@@ -2086,6 +2098,8 @@ static PyMethodDef dmpy_methods[] = {
         PyDoc_STR(DMPY_get_uuid_prefix__doc__)},
     {"is_dm_major", (PyCFunction)_dmpy_is_dm_major, METH_VARARGS,
         PyDoc_STR(DMPY_is_dm_major__doc__)},
+    {"lib_release", (PyCFunction)_dmpy_lib_release, METH_NOARGS,
+        PyDoc_STR(DMPY_lib_release__doc__)},
     {"hold_control_dev", (PyCFunction)_dmpy_hold_control_dev, METH_VARARGS,
         PyDoc_STR(DMPY_hold_control_dev__doc__)},
     {"mknodes", (PyCFunction)_dmpy_mknodes, METH_VARARGS,
