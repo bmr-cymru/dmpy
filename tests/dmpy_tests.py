@@ -11,7 +11,8 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA
 
 import unittest
 import shlex
@@ -20,8 +21,9 @@ from os.path import exists
 from subprocess import Popen, PIPE, STDOUT
 
 # Non-exported device-mapper constants: used for tests only.
-DM_NAME_LEN=128  # includes NULL
-DM_MAX_UUID_PREFIX_LEN=15
+DM_NAME_LEN = 128  # includes NULL
+DM_MAX_UUID_PREFIX_LEN = 15
+
 
 def _get_cmd_output(cmd):
     """ Call `cmd` via `Popen` and return the status and combined `stdout`
@@ -39,8 +41,6 @@ def _get_cmd_output(cmd):
 
     return (p.returncode, stdout)
 
-# Try to find the (a) current device-mapper major number from sysfs,
-# or /proc/devices. This is used to test dmpy.is_dm_major().
 
 def _get_dm_major_from_dm_0_sysfs():
     dm0_sysfs_path = "/sys/block/dm-0/dev"
@@ -49,6 +49,7 @@ def _get_dm_major_from_dm_0_sysfs():
     with open(dm0_sysfs_path, "r") as f:
         (major, minor) = f.read().strip().split(":")
     return int(major)
+
 
 def _get_dm_major_from_proc():
     proc_devices_path = "/proc/devices"
@@ -63,6 +64,9 @@ def _get_dm_major_from_proc():
                 break
     return int(major)
 
+
+# Try to find the (a) current device-mapper major number from sysfs,
+# or /proc/devices. This is used to test dmpy.is_dm_major().
 def _get_dm_major():
     try:
         return _get_dm_major_from_dm_0_sysfs()
@@ -71,6 +75,7 @@ def _get_dm_major():
             return _get_dm_major_from_proc()
         except:
             return 253
+
 
 def _get_driver_version_from_dmsetup():
     for line in _get_cmd_output("dmsetup version")[1].splitlines():
@@ -309,8 +314,8 @@ class DmpyTests(unittest.TestCase):
         self._test_empty_task_method_raises("get_uuid")
 
     def test_empty_get_message_response_raises(self):
-        # dm_task_get_message() returns the message from the results of an ioctl.
-        # If no ioctl has been peformed (or if the ioctl did not return
+        # dm_task_get_message() returns the message from the results of an
+        # ioctl. If no ioctl has been peformed (or if the ioctl did not return
         # device message), then attempting to call dm_task_get_message() will
         # trigger a segmentation fault. The Python bindings need to detect
         # this and return the Py_None type.
