@@ -85,3 +85,11 @@ class DmpyTests(unittest.TestCase):
         # trigger a segmentation fault. The Python bindings need to detect
         # this and return the Py_None type.
         self._test_empty_task_method_raises("get_uuid")
+
+    def test_empty_get_message_response_raises(self):
+        # dm_task_get_message() returns the message from the results of an ioctl.
+        # If no ioctl has been peformed (or if the ioctl did not return
+        # device message), then attempting to call dm_task_get_message() will
+        # trigger a segmentation fault. The Python bindings need to detect
+        # this and return the Py_None type.
+        self._test_empty_task_method_raises("get_message_response")
