@@ -445,4 +445,14 @@ class DmpyTests(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             dmt.set_newname(dm_name_too_long)
 
+    def test_task_set_get_name(self):
+        # Assert that `DmTask.set_name()` sets the dm name for a DM_DEVICE_INFO
+        # ioctl, and returns the correct device information by checking
+        # `DmTask.get_name()`.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+        self.assertTrue(self.dmpytest0 == dmt.get_name())
+
 # vim: set et ts=4 sw=4 :
