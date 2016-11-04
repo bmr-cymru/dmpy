@@ -61,14 +61,14 @@ string, which can be displayed using Python's builtin `help()`:
 
 ```
 >>> help(dm.DmTask.get_uuid)
-Help on method_descriptor)
+Help on method_descriptor:
 
 get_uuid(...)
-    Get the dm device's UUID based on the value of the mangling mode set
-    during preceding dm_task_run call.
+    Get the dm device's UUID based on the value of the mangling mode
+    set during preceding `DmTask.run()` call.
+    
     To force either mangled or unmangled output, set the `mangle` kwarg
     to '1' or '0' respectively.
-
 ```
 
 ## Examples

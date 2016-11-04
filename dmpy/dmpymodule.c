@@ -1537,10 +1537,10 @@ DmTask_get_errno(DmTaskObject *self, PyObject *args)
 "Get the DmInfo object associated with this `DmTask`, or None if no " \
 "DM_DEVICE_INFO was performed."
 
-#define DMTASK_get_uuid__doc__                                          \
-"Get the dm device's UUID based on the value of the mangling mode set " \
-"during preceding dm_task_run call.\nTo force either mangled or "       \
-"unmangled output, set the `mangle` kwarg to '1' or '0' respectively."
+#define DMTASK_get_uuid__doc__                                           \
+"Get the dm device's UUID based on the value of the mangling mode\nset " \
+"during preceding `DmTask.run()` call.\n\nTo force either mangled or "   \
+"unmangled output, set the `mangle` kwarg\nto '1' or '0' respectively."
 
 #define DMTASK_get_deps__doc__ \
 "Get the list of dependencies for the dm device."
