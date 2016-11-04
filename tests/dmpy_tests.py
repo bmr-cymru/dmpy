@@ -4,6 +4,9 @@ import unittest
 DM_NAME_LEN=128  # includes NULL
 DM_MAX_UUID_PREFIX_LEN=15
 
+# Try to find the (a) current device-mapper major number from sysfs,
+# or /proc/devices. This is used to test dmpy.is_dm_major().
+
 def _get_dm_major_from_dm_0_sysfs():
     dm0_sysfs_path = "/sys/block/dm-0/dev"
     major = None
