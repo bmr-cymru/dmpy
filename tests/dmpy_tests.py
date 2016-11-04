@@ -1,10 +1,28 @@
 import unittest
+import shlex
 from os import readlink
 from os.path import exists
+from subprocess import Popen, PIPE, STDOUT
 
 # Non-exported device-mapper constants: used for tests only.
 DM_NAME_LEN=128  # includes NULL
 DM_MAX_UUID_PREFIX_LEN=15
+
+def _get_cmd_output(cmd):
+    """ Call `cmd` via `Popen` and return the status and combined `stdout`
+        and `stderr` as a 2-tuple, e.g.:
+
+        (0, "vg00/lvol0: Created new region with 1 area(s) as region ID 5\n")
+
+    """
+    args = shlex.split(cmd)
+
+    p = Popen(args, shell=False, stdout=PIPE,
+              stderr=STDOUT, bufsize=-1, close_fds=True)
+    # stderr will always be None
+    (stdout, stderr) = p.communicate()
+
+    return (p.returncode, stdout)
 
 # Try to find the (a) current device-mapper major number from sysfs,
 # or /proc/devices. This is used to test dmpy.is_dm_major().
