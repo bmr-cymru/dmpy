@@ -9,7 +9,13 @@ class DmpyTests(unittest.TestCase):
         except Exception as e:
             self.fail(str(e))
 
-    def test_dm_task_types_new(self):
+    def test_dmpy_get_library_version(self):
+        import dmpy as dm
+        # Assert the expected major/minor version values (good since Nov 2005).
+        libdm_major_minor = "1.02"
+        self.assertTrue(dm.get_library_version().startswith(libdm_major_minor))
+
+    def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
         import dmpy as dm
         task_types = [
