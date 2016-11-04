@@ -62,3 +62,10 @@ class DmpyTests(unittest.TestCase):
         # this and return the Py_None type.
         self._test_empty_task_method_raises("get_name")
 
+    def test_empty_get_info_raises(self):
+        # dm_task_get_info() returns the info from the results of an ioctl.
+        # If no ioctl has been peformed (or if the ioctl did not return a
+        # device info), then attempting to call dm_task_get_info() will
+        # trigger a segmentation fault. The Python bindings need to detect
+        # this and return the Py_None type.
+        self._test_empty_task_method_raises("get_info")
