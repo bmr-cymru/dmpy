@@ -42,6 +42,18 @@ class DmpyTests(unittest.TestCase):
         for ttype in task_types:
             dmt = dm.DmTask(ttype)
 
+    def _test_empty_task_method_raises(self, method):
+        # Issue a DM_DEVICE_VERSION (which returns nothing but the driver
+        # version), and then attempt to call `method`, which should be the
+        # name of a `DmTask` method that raises `TypeError` when no data
+        # is present.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_VERSION)
+        dmt.run()
+        runnable = getattr(dmt, method)
+        self.assertTrue(runnable)
+        self.assertRaises(TypeError, runnable)
+
     def test_empty_get_name(self):
         # dm_task_get_name() returns the name from the results of an ioctl.
         # If no ioctl has been peformed (or if the ioctl did not return a
