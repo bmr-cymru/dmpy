@@ -32,6 +32,7 @@ def _get_dm_major():
         except:
             return 253
 
+
 class DmpyTests(unittest.TestCase):
 
     def test_import(self):

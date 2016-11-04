@@ -2072,8 +2072,6 @@ static PyMethodDef dmpy_methods[] = {
         METH_VARARGS, PyDoc_STR(DMPY_set_name_mangling_mode__doc__)},
     {"get_name_mangling_mode", (PyCFunction)_dmpy_get_name_mangling_mode,
         METH_NOARGS, PyDoc_STR(DMPY_get_name_mangling_mode__doc__)},
-    {"get_name_mangling_mode", (PyCFunction)_dmpy_get_name_mangling_mode,
-        METH_NOARGS, PyDoc_STR(DMPY_get_name_mangling_mode__doc__)},
     {"set_dev_dir", (PyCFunction)_dmpy_set_dev_dir, METH_VARARGS,
         PyDoc_STR(DMPY_set_dev_dir__doc__)},
     {"get_dev_dir", (PyCFunction)_dmpy_get_dev_dir, METH_NOARGS,
