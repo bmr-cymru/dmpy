@@ -101,3 +101,18 @@ class DmpyTests(unittest.TestCase):
         # trigger a segmentation fault. The Python bindings need to detect
         # this and return the Py_None type.
         self._test_empty_task_method_raises("get_names")
+
+    def test_get_name_list_and_check_types(self):
+        # We don't really care what devices are present - just that we get
+        # the expected list of 3-tuples with (str, int, int) types.
+        #
+        # Fail the test if no devices are found.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_LIST)
+        dmt.run()
+        names = dmt.get_names()
+        self.assertTrue(len(names))
+        for name in names:
+            self.assertTrue(type(name[0]) == str)  # name
+            self.assertTrue(type(name[1]) == int)  # major
+            self.assertTrue(type(name[2]) == int)  # minor
