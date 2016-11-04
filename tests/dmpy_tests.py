@@ -455,4 +455,33 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         self.assertTrue(self.dmpytest0 == dmt.get_name())
 
+    def test_task_get_info(self):
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+        info = dmt.get_info()
+        self.assertTrue(info)
+
+    def test_task_info_fields_present(self):
+        # Assert that the info.exists flag is zero for a non-existent device.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+        info = dmt.get_info()
+        self.assertTrue(info.exists)
+        self.assertTrue(info.live_table)
+        self.assertFalse(info.read_only)
+
+    def test_task_info_fields_nodev(self):
+        # Assert that the info.exists flag is zero for a non-existent device.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.nodev)
+        dmt.run()
+        info = dmt.get_info()
+        self.assertFalse(info.exists)
+
+
 # vim: set et ts=4 sw=4 :
