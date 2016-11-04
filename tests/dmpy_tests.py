@@ -60,8 +60,5 @@ class DmpyTests(unittest.TestCase):
         # device name), then attempting to call dm_task_get_name() will
         # trigger a segmentation fault. The Python bindings need to detect
         # this and return the Py_None type.
-        import dmpy as dm
-        dmt = dm.DmTask(dm.DM_DEVICE_VERSION)
-        dmt.run()
-        self.assertRaises(TypeError, dmt.get_name)
+        self._test_empty_task_method_raises("get_name")
 
