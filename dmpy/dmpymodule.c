@@ -530,16 +530,104 @@ static PyTypeObject DmInfo_Type = {
     0,                          /*tp_is_gc*/
 };
 
+/* dm_task state flags: since `struct dm_task` is not exposed in
+ * `libdevmapper.h`, maintain flags indicating the validity of the various
+ * members, following issue of a particular `DM_DEVICE_*` command.
+ */
+#define DMT_DID_IOCTL           0x00000001
+#define DMT_DID_ERROR           0x00000002
+#define DMT_HAVE_INFO           0x00000010
+#define DMT_HAVE_NAME           0x00000020
+#define DMT_HAVE_UUID           0x00000040
+#define DMT_HAVE_DEPS           0x00000080
+#define DMT_HAVE_NAME_LIST      0x00000100
+#define DMT_HAVE_TIMESTAMP      0x00000200
+#define DMT_HAVE_MESSAGE        0x00000400
+#define DMT_HAVE_TABLE          0x00000800
+#define DMT_HAVE_STATUS         0x00001000
+#define DMT_HAVE_TARGET_VERSIONS 0x00002000
+
+ /* Flags for each dm_task type indicating the expected output.
+ *  Task flags are set in `DmTask.run()`. Entries in DM_DEVICE_* enum
+ *  order.
+ */
+static const uint32_t _DmTask_task_type_flags[] = {
+    DMT_HAVE_NAME,  /* CREATE */
+    DMT_HAVE_NAME,  /* RELOAD */
+    DMT_HAVE_NAME,  /* REMOVE */
+    0,              /* REMOVE_ALL */
+    DMT_HAVE_NAME,  /* SUSPEND */
+    DMT_HAVE_NAME,  /* RESUME */
+    (DMT_HAVE_NAME | DMT_HAVE_INFO),  /* INFO */
+    (DMT_HAVE_NAME | DMT_HAVE_DEPS),  /*DEPS */
+    DMT_HAVE_NAME,  /* RENAME */
+    0,  /* VERSION */
+    DMT_HAVE_NAME,  /* STATUS */
+    (DMT_HAVE_NAME | DMT_HAVE_TABLE),  /* TABLE */
+    DMT_HAVE_NAME,  /* WAITEVENT */
+    DMT_HAVE_NAME_LIST,  /* LIST */
+    DMT_HAVE_NAME,  /* CLEAR */
+    0,  /* MKNODES */
+    DMT_HAVE_TARGET_VERSIONS,  /* LIST_VERSIONS */
+    (DMT_HAVE_NAME | DMT_HAVE_MESSAGE),  /* TARGET_MSG */
+    DMT_HAVE_NAME  /* SET_GEOMETRY */
+};
+
+/* Names for DmTask data flags for use in exception strings. */
+static const char * const _DmTask_flag_strings[] = {
+    "ioctl",
+    "error",
+    NULL,
+    NULL,
+    "info",
+    "name",
+    "UUID",
+    "dependencies",
+    "name list",
+    "timestamp",
+    "message response",
+    "table",
+    "status",
+    "target versions"
+};
 
 typedef struct {
     PyObject_HEAD
     struct dm_task *ob_dmt;
     DmCookieObject *ob_cookie;
+    uint32_t ob_flags; /* dm_task state flags */
+    int ob_task_type; /* DM_DEVICE_* type at instantiation. */
 } DmTaskObject;
 
 static PyTypeObject DmTask_Type;
 
 #define DmTaskObject_Check(v)      (Py_TYPE(v) == &DmTask_Type)
+
+/*
+ * Check whether an ioctl has been performed, and whether `flag` is present
+ * in `self->ob_flags`, and raise TypeError if either condition is not met.
+ */
+static int
+_DmTask_check_data_flags(DmTaskObject *self, uint32_t flag, char *method)
+{
+    int flag_index = 0;
+
+    if (!(self->ob_flags & DMT_DID_IOCTL)) {
+        PyErr_Format(PyExc_TypeError, "DmTask(%s).%s requires ioctl data.",
+                     _dm_task_type_names[self->ob_task_type], method);
+        return -1;
+    }
+
+    if (!(self->ob_flags & flag)) {
+        while (flag >>= 1)
+            flag_index++;
+        PyErr_Format(PyExc_TypeError, "DmTask(%s) does not provide "
+                     "%s data.", _dm_task_type_names[self->ob_task_type],
+                     _DmTask_flag_strings[flag_index]);
+        return -1;
+    }
+    return 0;
+}
 
 static int
 DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
@@ -550,12 +638,25 @@ DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
         return -1;
 
     self->ob_cookie = NULL;
+    self->ob_flags = 0;
 
     if (!(self->ob_dmt = dm_task_create(type))) {
         /* FIXME: use dm_task_get_errno */
         PyErr_SetFromErrno(PyExc_OSError);
         return -1;
     }
+
+    /* Record the DM_DEVICE_* type that this DmTask was instantiated with.
+     * This may be different to the actual current value of dmt->type, since
+     * the library may choose to re-write the operation internally, or even
+     * satisfy it using mutliple discrete operations.
+     *
+     * From the caller's point of view this does not matter: we just care that
+     * we know the type that was requested, in order to have the correct
+     * expectations for which fields will be valid in the response.
+     */
+    self->ob_task_type = type;
+    self->ob_flags = 0;
 
     if (!dm_task_enable_checks(self->ob_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask checks.");
@@ -617,10 +718,15 @@ static PyObject *
 DmTask_run(DmTaskObject *self, PyObject *args)
 {
     if (!(dm_task_run(self->ob_dmt))) {
-        /* FIXME: use dm_task_get_errno */
+        self->ob_flags = DMT_DID_ERROR;
+        errno = dm_task_get_errno(self->ob_dmt);
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     }
+
+    /* set data flags from task type */
+    self->ob_flags |= _DmTask_task_type_flags[self->ob_task_type];
+    self->ob_flags |= DMT_DID_IOCTL;
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -629,6 +735,10 @@ DmTask_run(DmTaskObject *self, PyObject *args)
 static PyObject *DmTask_get_driver_version(DmTaskObject *self, PyObject *args)
 {
     char version[DMPY_VERSION_BUF_LEN];
+
+    if (_DmTask_check_data_flags(self, -1, "get_driver_version"))
+        return NULL;
+
     if (!dm_task_get_driver_version(self->ob_dmt, version, sizeof(version))) {
         PyErr_SetString(PyExc_OSError, "Failed to get device-mapper "
                         "library version.");
@@ -641,6 +751,9 @@ static PyObject *
 DmTask_get_info(DmTaskObject *self, PyObject *args)
 {
     DmInfoObject *info;
+
+    if (_DmTask_check_data_flags(self, DMT_HAVE_INFO, "get_info"))
+        return NULL;
 
     info = newDmInfoObject(Py_None);
     if (!info)
@@ -660,6 +773,9 @@ static PyObject *DmTask_get_uuid(DmTaskObject *self, PyObject *args, PyObject *k
     static char *kwlist[] = {"mangled", NULL};
     int mangled = -1; /* use name_mangling_mode */
     const char *uuid;
+
+    if (_DmTask_check_data_flags(self, DMT_HAVE_UUID, "get_uuid"))
+        return NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i:get_uuid",
                                      kwlist, &mangled))
@@ -684,7 +800,7 @@ _dm_build_deps_list(struct dm_deps *deps)
 
     if (!deps->count) {
         PyErr_SetString(PyExc_OSError, "Received empty dependency list "
-                        "from device-mapper");
+                        "from device-mapper.");
         return NULL;
     }
 
@@ -711,9 +827,13 @@ DmTask_get_deps(DmTaskObject *self, PyObject *args)
 {
     struct dm_deps *deps = NULL;
 
+    if (_DmTask_check_data_flags(self, DMT_HAVE_DEPS, "get_deps"))
+        return NULL;
+
     if (!(deps = dm_task_get_deps(self->ob_dmt))) {
-        Py_INCREF(Py_None);
-        return Py_None;
+        PyErr_SetString(PyExc_OSError, "Failed to retrieve dependencies from "
+                        "device-mapper.");
+        return NULL;
     }
 
     return _dm_build_deps_list(deps);
@@ -774,6 +894,10 @@ DmTask_get_versions(DmTaskObject *self, PyObject *args)
 {
     struct dm_versions *versions;
 
+    if (_DmTask_check_data_flags(self, DMT_HAVE_TARGET_VERSIONS,
+                                 "get_versions"))
+        return NULL;
+
     versions = dm_task_get_versions(self->ob_dmt);
     if (!versions) {
         PyErr_SetString(PyExc_OSError, "Failed to get task versions "
@@ -786,6 +910,10 @@ DmTask_get_versions(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_get_message_response(DmTaskObject *self, PyObject *args)
 {
+    if (_DmTask_check_data_flags(self, DMT_HAVE_MESSAGE,
+                                 "get_message_response"))
+        return NULL;
+
     return Py_BuildValue("s", dm_task_get_message_response(self->ob_dmt));
 }
 
@@ -795,6 +923,9 @@ DmTask_get_name(DmTaskObject *self, PyObject *args, PyObject *kwds)
     static char *kwlist[] = {"mangled", NULL};
     int mangled = -1; /* use name_mangling_mode */
     const char *name;
+
+    if (_DmTask_check_data_flags(self, DMT_HAVE_NAME, "name"))
+        return NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i:get_name",
                                      kwlist, &mangled))
@@ -844,6 +975,9 @@ static PyObject *
 DmTask_get_names(DmTaskObject *self, PyObject *args)
 {
     struct dm_names *names = NULL;
+
+    if (_DmTask_check_data_flags(self, DMT_HAVE_NAME_LIST, "get_names"))
+        return NULL;
 
     if (!(names = dm_task_get_names(self->ob_dmt))) {
         Py_INCREF(Py_None);
@@ -1245,6 +1379,8 @@ DmTask_set_record_timestamp(DmTaskObject *self, PyObject *args)
         return NULL;
     }
 
+    self->ob_flags |= DMT_HAVE_TIMESTAMP;
+
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -1254,6 +1390,18 @@ DmTask_get_ioctl_timestamp(DmTaskObject *self, PyObject *args)
 {
     struct dm_timestamp *ts;
     DmTimestampObject *new_ts;
+
+    /* Timestamps can be enabled for any task type (if the device-mapper
+     * library supports them), so test first whether an ioctl has been run,
+     * and then test for the DMT_HAVE_TIMESTAMP flag separately.
+     */
+    if (_DmTask_check_data_flags(self, -1, "get_ioctl_timestamp"))
+        return NULL;
+
+    if (!(self->ob_flags & DMT_HAVE_TIMESTAMP)) {
+        PyErr_SetString(PyExc_TypeError, "DmTask timestamps not enabled.");
+        return NULL;
+    }
 
     if (!(ts = dm_task_get_ioctl_timestamp(self->ob_dmt))) {
         PyErr_SetString(PyExc_OSError, "Failed to get ioctl timestamp from "
@@ -1354,6 +1502,9 @@ DmTask_add_target(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_get_errno(DmTaskObject *self, PyObject *args)
 {
+    if (_DmTask_check_data_flags(self, -1, "get_errno"))
+        return NULL;
+
     return Py_BuildValue("i", dm_task_get_errno(self->ob_dmt));
 }
 
