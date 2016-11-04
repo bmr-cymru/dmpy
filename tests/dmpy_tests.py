@@ -75,6 +75,25 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_HEX))
         self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_HEX)
 
+    def test_set_get_dev_dir(self):
+        # Ensure that we get the same dev_dir back as we set, and
+        # that the default directory is as expected.
+        import dmpy as dm
+        # Default device directory. If your libdevmapper was compiled with
+        # a different value, change the definition of `default_dev_dir_get`.
+        default_dev_dir_get = "/dev/mapper"
+        other_dev_dir_get = "/var/tmp/mapper"
+        other_dev_dir = "/var/tmp"
+        reset_dev_dir = "/dev"
+        # Assert that dm.STRING_MANGLING_AUTO is default.
+        initial_dev_dir = dm.get_dev_dir()
+        # Assert that the expected string is returned following a set.
+        self.assertTrue(initial_dev_dir == default_dev_dir_get)
+        self.assertTrue(dm.set_dev_dir(other_dev_dir))
+        self.assertTrue(dm.get_dev_dir() == other_dev_dir_get)
+        self.assertTrue(dm.set_dev_dir(reset_dev_dir))
+        self.assertTrue(dm.get_dev_dir() == default_dev_dir_get)
+
     def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
         import dmpy as dm
