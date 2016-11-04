@@ -238,6 +238,10 @@ class DmpyTests(unittest.TestCase):
         dmsetup_drv_version = _get_driver_version_from_dmsetup()
         self.assertTrue(dmpy_drv_version == dmsetup_drv_version)
 
+    def test_dump_memory(self):
+        # FIXME: test with custom logging fn?
+        pass
+
     #
     # DmTask tests.
     #
