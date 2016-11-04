@@ -127,6 +127,22 @@ def _remove_dm_device(dm_dev):
 
 class DmpyTests(unittest.TestCase):
 
+    test_dev_size_bytes = 2**20
+    nodev = "quxquxquxquxqux"
+    loop0 = None
+    dmpytest0 = None
+
+    def setUp(self):
+        dev_size = self.test_dev_size_bytes
+        self.loop0 = _create_loopback("/var/tmp/", dev_size)
+        self.dmpytest0 = _create_linear_device(self.loop0[0], dev_size)
+
+    def tearDown(self):
+        if (self.dmpytest0):
+            _remove_dm_device(self.dmpytest0)
+        if (self.loop0):
+            _remove_loopback(self.loop0)
+
     def test_import(self):
         # attempt to import dmpy
         try:
