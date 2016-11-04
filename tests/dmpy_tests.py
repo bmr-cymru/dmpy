@@ -36,3 +36,14 @@ class DmpyTests(unittest.TestCase):
         for ttype in task_types:
             dmt = dm.DmTask(ttype)
 
+    def test_empty_get_name(self):
+        # dm_task_get_name() returns the name from the results of an ioctl.
+        # If no ioctl has been peformed (or if the ioctl did not return a
+        # device name), then attempting to call dm_task_get_name() will
+        # trigger a segmentation fault. The Python bindings need to detect
+        # this and return the Py_None type.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_VERSION)
+        dmt.run()
+        self.assertRaises(TypeError, dmt.get_name)
+
