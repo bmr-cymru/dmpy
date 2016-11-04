@@ -44,6 +44,10 @@ class DmpyTests(unittest.TestCase):
         except Exception as e:
             self.fail(str(e))
 
+    #
+    # Dmpy module tests.
+    #
+
     def test_dmpy_get_library_version(self):
         import dmpy as dm
         # Assert the expected major/minor version values (good since Nov 2005).
@@ -132,6 +136,10 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dm.get_uuid_prefix() == default_uuid_prefix)
         self.assertTrue(dm.set_uuid_prefix(new_uuid_prefix))
         self.assertTrue(dm.get_uuid_prefix() == new_uuid_prefix)
+
+    #
+    # DmTask tests.
+    #
 
     def test_dm_task_types_all_new(self):
         # test creation of each defined DM_DEVICE_* task type
