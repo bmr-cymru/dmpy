@@ -107,6 +107,24 @@ def _remove_loopback(loop_device):
     unlink(loop_file)
 
 
+def _create_linear_device(dev, size):
+    dm_name = "dmpytest0"
+    sectors = size >> 9
+
+    r = _get_cmd_output("dmsetup create %s --table='0 %d linear %s 0'" %
+                        (dm_name, sectors, dev))
+    if r[0]:
+        raise OSError("Failed to create linear device.")
+
+    return dm_name
+
+
+def _remove_dm_device(dm_dev):
+    r = _get_cmd_output("dmsetup remove %s" % dm_dev)
+    if r[0]:
+        raise OSError("Failed to create linear device.")
+
+
 class DmpyTests(unittest.TestCase):
 
     def test_import(self):
