@@ -87,7 +87,7 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dm.is_dm_major(_get_dm_major()))
 
     def test_update_nodes(self):
-        pass  # FIXME: how to test?
+        pass  # FIXME: test with fake /dev and udev disabled.
 
     def test_set_get_name_mangling_mode(self):
         # Ensure that we get the same name_mangling_mode back as we set, and
@@ -200,6 +200,9 @@ class DmpyTests(unittest.TestCase):
         dm.lib_release()
         # Control fd path should not exist now.
         self.assertFalse(exists(control_fd_path))
+
+    def test_mknodes(self):
+        pass  # FIXME: test with fake /dev and udev disabled.
 
     #
     # DmTask tests.
