@@ -57,6 +57,12 @@ def _get_dm_major():
         except:
             return 253
 
+def _get_driver_version_from_dmsetup():
+    for line in _get_cmd_output("dmsetup version")[1].splitlines():
+        if not line.startswith("Driver version"):
+            continue
+        return line.split(":")[1].lstrip()
+
 
 class DmpyTests(unittest.TestCase):
 
@@ -203,6 +209,14 @@ class DmpyTests(unittest.TestCase):
 
     def test_mknodes(self):
         pass  # FIXME: test with fake /dev and udev disabled.
+
+    def test_driver_version(self):
+        # Assert that the driver version string returned by
+        # `dmpy.driver_version()` matches the one returned by dmsetup.
+        import dmpy as dm
+        dmpy_drv_version = dm.driver_version()
+        dmsetup_drv_version = _get_driver_version_from_dmsetup()
+        self.assertTrue(dmpy_drv_version == dmsetup_drv_version)
 
     #
     # DmTask tests.
