@@ -1,4 +1,6 @@
 import unittest
+from os import readlink
+from os.path import exists
 
 # Non-exported device-mapper constants: used for tests only.
 DM_NAME_LEN=128  # includes NULL
@@ -139,6 +141,47 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dm.get_uuid_prefix() == default_uuid_prefix)
         self.assertTrue(dm.set_uuid_prefix(new_uuid_prefix))
         self.assertTrue(dm.get_uuid_prefix() == new_uuid_prefix)
+
+    def test_lib_release_releases_fd(self):
+        # Assert that a call to dmpy.lib_release() closes the ioctl file
+        # descriptor.
+        import dmpy as dm
+        dev_mapper_control = "/dev/mapper/control"
+        control_fd_path = "/proc/self/fd/3"
+
+        # Run a DM_DEVICE_LIST to open the ioctl fd.
+        dmt = dm.DmTask(dm.DM_DEVICE_LIST)
+        dmt.run()
+        dmt = None
+        # Control fd path should exist now.
+        self.assertTrue(exists(control_fd_path))
+        self.assertTrue(dev_mapper_control == readlink(control_fd_path))
+        # Control fd path should be close following lib_release().
+        dm.lib_release()
+        self.assertFalse(exists(control_fd_path))
+
+    def test_hold_control_dev_open(self):
+        # Assert that dmpy.hold_control_dev_open() returns True.
+        import dmpy as dm
+        dev_mapper_control = "/dev/mapper/control"
+        control_fd_path = "/proc/self/fd/3"
+
+        # Enable holding the control fd.
+        dm.hold_control_dev(1)
+        # Run a DM_DEVICE_LIST to open the ioctl fd.
+        dmt = dm.DmTask(dm.DM_DEVICE_LIST)
+        dmt.run()
+        dmt = None
+        # Control fd path should exist now.
+        self.assertTrue(exists(control_fd_path))
+        self.assertTrue(dev_mapper_control == readlink(control_fd_path))
+        dm.lib_release()
+        # Control fd path should exist now.
+        self.assertTrue(exists(control_fd_path))
+        dm.hold_control_dev(0)
+        dm.lib_release()
+        # Control fd path should not exist now.
+        self.assertFalse(exists(control_fd_path))
 
     #
     # DmTask tests.
