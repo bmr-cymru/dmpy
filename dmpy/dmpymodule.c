@@ -1539,14 +1539,16 @@ DmTask_get_errno(DmTaskObject *self, PyObject *args)
 
 #define DMTASK_get_uuid__doc__                                          \
 "Get the dm device's UUID based on the value of the mangling mode set " \
-"during preceding dm_task_run call.\nTo force either mangled or "     \
+"during preceding dm_task_run call.\nTo force either mangled or "       \
 "unmangled output, set the `mangle` kwarg to '1' or '0' respectively."
 
 #define DMTASK_get_deps__doc__ \
 "Get the list of dependencies for the dm device."
 
 #define DMTASK_get_versions__doc__ \
-"Get the library version in numerical format."
+"Get target version dictionary following a `DM_DEVICE_LIST_VERSIONS`\n"    \
+"command.\n\nReturns a dictionary whose keys are device-mapper target "    \
+"names, and whose\nvalues are 3-tuples giving the target version numbers." \
 
 #define DMTASK_get_message_response__doc__ \
 "Retrieve the response to a prior `DM_DEVICE_TARGET_MSG` as a string."
@@ -1556,7 +1558,7 @@ DmTask_get_errno(DmTaskObject *self, PyObject *args)
 
 #define DMTASK_get_names__doc__ \
 "Get the list of device names returned by a prior DM_DEVICE_LIST operation " \
-"on this `DmTask`.\n\nReturns a list of 3-tuples containing the device " \
+"on this `DmTask`.\n\nReturns a list of 3-tuples containing the device "     \
 "name, major, and minor number."
 
 #define DMTASK_set_ro__doc__ \
@@ -1671,7 +1673,7 @@ static PyMethodDef DmTask_methods[] = {
     {"get_deps", (PyCFunction)DmTask_get_deps, METH_NOARGS,
         PyDoc_STR(DMTASK_get_deps__doc__)},
     {"get_versions", (PyCFunction)DmTask_get_versions, METH_NOARGS,
-        PyDoc_STR(DMTASK_get_deps__doc__)},
+        PyDoc_STR(DMTASK_get_versions__doc__)},
     {"get_message_response", (PyCFunction)DmTask_get_message_response,
         METH_NOARGS, PyDoc_STR(DMTASK_get_message_response__doc__)},
     {"get_name", (PyCFunction)DmTask_get_name, METH_VARARGS | METH_KEYWORDS,
