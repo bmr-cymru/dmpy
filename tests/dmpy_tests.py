@@ -39,7 +39,8 @@ def _get_cmd_output(cmd):
     # stderr will always be None
     (stdout, stderr) = p.communicate()
 
-    return (p.returncode, stdout)
+    # Change the codec if testing in a non-utf8 environment.
+    return (p.returncode, stdout.decode('utf-8'))
 
 
 def _get_dm_major_from_dm_0_sysfs():
