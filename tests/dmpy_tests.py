@@ -1,5 +1,7 @@
 import unittest
 
+DM_NAME_LEN=128  # includes NULL
+
 class DmpyTests(unittest.TestCase):
 
     def test_import(self):
@@ -116,3 +118,45 @@ class DmpyTests(unittest.TestCase):
             self.assertTrue(type(name[0]) == str)  # name
             self.assertTrue(type(name[1]) == int)  # major
             self.assertTrue(type(name[2]) == int)  # minor
+
+    def test_set_newname_name_ok(self):
+        # Assert that a valid newname can be set via DmTask.set_newname()
+        # on a DmTask(DM_DEVICE_RENAME) task.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dm_name_ok = (DM_NAME_LEN - 1) * "A"
+        self.assertTrue(dmt.set_newname(dm_name_ok))
+
+    def test_set_newname_null_name(self):
+        # Assert that TypeError is raised when name is NULL.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dm_name_null = None
+        with self.assertRaises(TypeError) as cm:
+            dmt.set_newname(dm_name_null)
+
+    def test_set_newname_empty_name(self):
+        # Assert that ValueError is raised when name is NULL.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dm_name_empty = ""
+        with self.assertRaises(ValueError) as cm:
+            dmt.set_newname(dm_name_empty)
+
+    def test_set_newname_name_has_slash(self):
+        # Assert that ValueError is raised when name contains '/'
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dm_name_has_slash = "/qux"
+        with self.assertRaises(ValueError) as cm:
+            dmt.set_newname(dm_name_has_slash)
+
+    def test_set_newname_name_too_long(self):
+        # Assert that ValueError is raised when len(name) > (DM_NAME_LEN - 1).
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dm_name_too_long = DM_NAME_LEN * "A"
+        with self.assertRaises(ValueError) as cm:
+            dmt.set_newname(dm_name_too_long)
+
+# vim: set et ts=4 sw=4 :
