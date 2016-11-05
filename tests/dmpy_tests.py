@@ -19,6 +19,7 @@ import shlex
 from os import readlink, unlink
 from os.path import exists, join
 from subprocess import Popen, PIPE, STDOUT
+from random import random
 
 # Non-exported device-mapper constants: used for tests only.
 DM_NAME_LEN = 128  # includes NULL
@@ -26,8 +27,15 @@ DM_MAX_UUID_PREFIX_LEN = 15
 
 # Format for dmpytestN test devices.
 _uuid_prefix = "DMPY-"
-_uuid_format = "%s%s%d"
-_uuid_filler = "1234567890abcdef"
+_uuid_format = "%s%s%x"
+_uuid_filler = "12345678"
+
+_udev_settle_delay = 0.199  # seconds (100ms)
+
+
+def _new_uuid():
+    rand = random() * 2 ** 32
+    return _uuid_format % (_uuid_prefix, _uuid_filler, int(rand))
 
 
 def _get_cmd_output(cmd):
@@ -116,7 +124,7 @@ def _create_linear_device(dev, size):
     dm_name = "dmpytest0"
     sectors = size >> 9
 
-    uuid = _uuid_format % (_uuid_prefix, _uuid_filler, 0)
+    uuid = _new_uuid()
     r = _get_cmd_output("dmsetup create %s --uuid %s "
                         "--table='0 %d ""linear %s 0'" %
                         (dm_name, uuid, sectors, dev))
