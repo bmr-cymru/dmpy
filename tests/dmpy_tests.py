@@ -195,14 +195,14 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         # Assert that dm.STRING_MANGLING_AUTO is default.
         initial_mode = dm.get_name_mangling_mode()
-        self.assertTrue(initial_mode == dm.STRING_MANGLING_AUTO)
+        self.assertEqual(initial_mode, dm.STRING_MANGLING_AUTO)
         # Assert that we get each mangline mode back as expected.
         self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_NONE))
-        self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_NONE)
+        self.assertEqual(dm.get_name_mangling_mode(), dm.STRING_MANGLING_NONE)
         self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_AUTO))
-        self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_AUTO)
+        self.assertEqual(dm.get_name_mangling_mode(), dm.STRING_MANGLING_AUTO)
         self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_HEX))
-        self.assertTrue(dm.get_name_mangling_mode() == dm.STRING_MANGLING_HEX)
+        self.assertEqual(dm.get_name_mangling_mode(), dm.STRING_MANGLING_HEX)
 
     def test_set_get_dev_dir(self):
         # Ensure that we get the same dev_dir back as we set, and
@@ -217,11 +217,11 @@ class DmpyTests(unittest.TestCase):
         # Assert that dm.STRING_MANGLING_AUTO is default.
         initial_dev_dir = dm.get_dev_dir()
         # Assert that the expected string is returned following a set.
-        self.assertTrue(initial_dev_dir == default_dev_dir_get)
+        self.assertEqual(initial_dev_dir, default_dev_dir_get)
         self.assertTrue(dm.set_dev_dir(other_dev_dir))
-        self.assertTrue(dm.get_dev_dir() == other_dev_dir_get)
+        self.assertEqual(dm.get_dev_dir(), other_dev_dir_get)
         self.assertTrue(dm.set_dev_dir(reset_dev_dir))
-        self.assertTrue(dm.get_dev_dir() == default_dev_dir_get)
+        self.assertEqual(dm.get_dev_dir(), default_dev_dir_get)
 
     def test_set_get_sysfs_dir(self):
         # Ensure that we get the same dev_dir back as we set, and
@@ -233,7 +233,7 @@ class DmpyTests(unittest.TestCase):
         # Assert that default_sysfs_dir_get is default.
         initial_sysfs_dir = dm.get_sysfs_dir()
         # Assert that the expected string is returned following a set.
-        self.assertTrue(initial_sysfs_dir == default_sysfs_dir_get)
+        self.assertEqual(initial_sysfs_dir, default_sysfs_dir_get)
 
     def test_set_sysfs_dir_non_abs_path(self):
         # Assert that attampting to set a non-absolute sysfs path raises a
@@ -256,9 +256,9 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         default_uuid_prefix = "LVM-"
         new_uuid_prefix = "QUX-"
-        self.assertTrue(dm.get_uuid_prefix() == default_uuid_prefix)
+        self.assertEqual(dm.get_uuid_prefix(), default_uuid_prefix)
         self.assertTrue(dm.set_uuid_prefix(new_uuid_prefix))
-        self.assertTrue(dm.get_uuid_prefix() == new_uuid_prefix)
+        self.assertEqual(dm.get_uuid_prefix(), new_uuid_prefix)
 
     def test_lib_release_releases_fd(self):
         # Assert that a call to dmpy.lib_release() closes the ioctl file
@@ -273,7 +273,7 @@ class DmpyTests(unittest.TestCase):
         dmt = None
         # Control fd path should exist now.
         self.assertTrue(exists(control_fd_path))
-        self.assertTrue(dev_mapper_control == readlink(control_fd_path))
+        self.assertEqual(dev_mapper_control, readlink(control_fd_path))
         # Control fd path should be close following lib_release().
         dm.lib_release()
         self.assertFalse(exists(control_fd_path))
@@ -295,7 +295,7 @@ class DmpyTests(unittest.TestCase):
         dmt = None
         # Control fd path should exist now.
         self.assertTrue(exists(control_fd_path))
-        self.assertTrue(dev_mapper_control == readlink(control_fd_path))
+        self.assertEqual(dev_mapper_control, readlink(control_fd_path))
         dm.lib_release()
         # Control fd path should exist now.
         self.assertTrue(exists(control_fd_path))
@@ -313,7 +313,7 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         dmpy_drv_version = dm.driver_version()
         dmsetup_drv_version = _get_driver_version_from_dmsetup()
-        self.assertTrue(dmpy_drv_version == dmsetup_drv_version)
+        self.assertEqual(dmpy_drv_version, dmsetup_drv_version)
 
     def test_dump_memory(self):
         # FIXME: test with custom logging fn?
@@ -421,9 +421,9 @@ class DmpyTests(unittest.TestCase):
         names = dmt.get_names()
         self.assertTrue(len(names))
         for name in names:
-            self.assertTrue(type(name[0]) == str)  # name
-            self.assertTrue(type(name[1]) == int)  # major
-            self.assertTrue(type(name[2]) == int)  # minor
+            self.assertEqual(type(name[0]), str)  # name
+            self.assertEqual(type(name[1]), int)  # major
+            self.assertEqual(type(name[2]), int)  # minor
 
     def test_set_newname_name_ok(self):
         # Assert that a valid newname can be set via DmTask.set_newname()
@@ -473,7 +473,7 @@ class DmpyTests(unittest.TestCase):
         dmt = dm.DmTask(dm.DM_DEVICE_INFO)
         dmt.set_name(self.dmpytest0)
         dmt.run()
-        self.assertTrue(self.dmpytest0 == dmt.get_name())
+        self.assertEqual(self.dmpytest0, dmt.get_name())
 
     def test_task_get_info(self):
         # Assert that a non-NULL DmInfo object is returned following a
