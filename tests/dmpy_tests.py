@@ -154,6 +154,7 @@ class DmpyTests(unittest.TestCase):
         self.dmpytest0 = _create_linear_device(self.loop0[0], dev_size)
 
     def tearDown(self):
+        _get_cmd_output("udevadm settle")
         if (self.dmpytest0):
             _remove_dm_device(self.dmpytest0)
         if (self.loop0):
