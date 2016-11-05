@@ -270,7 +270,10 @@ class DmpyTests(unittest.TestCase):
         self.assertFalse(exists(control_fd_path))
 
     def test_hold_control_dev_open(self):
-        # Assert that dmpy.hold_control_dev_open() returns True.
+        # Assert that dmpy.hold_control_dev_open() returns True, that the
+        # control device is held open across a subsequent call to
+        # dm.lib_release(), and that it is closed after hold_control_dev is
+        # disabled and a second call to dm_lib_release() made.
         import dmpy as dm
         dev_mapper_control = "/dev/mapper/control"
         control_fd_path = "/proc/self/fd/3"
