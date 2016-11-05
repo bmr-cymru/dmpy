@@ -137,7 +137,7 @@ def _create_linear_device(dev, size):
 def _remove_dm_device(dm_dev):
     r = _get_cmd_output("dmsetup remove %s" % dm_dev)
     if r[0]:
-        raise OSError("Failed to create linear device.")
+        raise OSError("Failed to remove dm device %s." % dm_dev)
 
 
 class DmpyTests(unittest.TestCase):
