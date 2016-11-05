@@ -24,6 +24,11 @@ from subprocess import Popen, PIPE, STDOUT
 DM_NAME_LEN = 128  # includes NULL
 DM_MAX_UUID_PREFIX_LEN = 15
 
+# Format for dmpytestN test devices.
+_uuid_prefix = "DMPY-"
+_uuid_format = "%s%s%d"
+_uuid_filler = "1234567890abcdef"
+
 
 def _get_cmd_output(cmd):
     """ Call `cmd` via `Popen` and return the status and combined `stdout`
@@ -111,8 +116,10 @@ def _create_linear_device(dev, size):
     dm_name = "dmpytest0"
     sectors = size >> 9
 
-    r = _get_cmd_output("dmsetup create %s --table='0 %d linear %s 0'" %
-                        (dm_name, sectors, dev))
+    uuid = _uuid_format % (_uuid_prefix, _uuid_filler, 0)
+    r = _get_cmd_output("dmsetup create %s --uuid %s "
+                        "--table='0 %d ""linear %s 0'" %
+                        (dm_name, uuid, sectors, dev))
     if r[0]:
         raise OSError("Failed to create linear device.")
 
@@ -500,5 +507,20 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         region_id = dmt.get_message_response()
         self.assertTrue(int(region_id) >= 0)
+
+    def test_set_newname_run_get_name(self):
+        # Assert that setting a new name succeeds, and that the ioctl runs
+        # successfully and returns the new name.
+        import dmpy as dm
+        newname = "dmpytest1"
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dmt.set_name(self.dmpytest0)
+        dmt.set_newname(newname)
+        dmt.run()
+        self.dmpytest0 = newname # for tearDown()
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(newname)
+        dmt.run()
+        self.assertEqual(dmt.get_name(), newname)
 
 # vim: set et ts=4 sw=4 :
