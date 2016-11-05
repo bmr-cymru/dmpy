@@ -529,7 +529,7 @@ class DmpyTests(unittest.TestCase):
         dmt.set_name(self.dmpytest0)
         dmt.set_newname(newname)
         dmt.run()
-        self.dmpytest0 = newname # for tearDown()
+        self.dmpytest0 = newname  # for tearDown()
         dmt = dm.DmTask(dm.DM_DEVICE_INFO)
         dmt.set_name(newname)
         dmt.run()
