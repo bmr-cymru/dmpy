@@ -128,6 +128,7 @@ def _remove_dm_device(dm_dev):
 class DmpyTests(unittest.TestCase):
 
     test_dev_size_bytes = 2**20
+    test_dev_size_sectors = 2**11
     nodev = "quxquxquxquxqux"
     loop0 = None
     dmpytest0 = None
@@ -486,5 +487,18 @@ class DmpyTests(unittest.TestCase):
         info = dmt.get_info()
         self.assertFalse(info.exists)
 
+    def test_set_message_run_response(self):
+        # Assert that setting a message succeeds, and that the ioctl runs
+        # successfully and gives the expected response.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_TARGET_MSG)
+        # Use a '@stats_create' as the message type - it will always succeed
+        # on any target and system with stats support.
+        dmt.set_name(self.dmpytest0)
+        message = "@stats_create 0+%d /1" % self.test_dev_size_sectors
+        self.assertTrue(dmt.set_message(message))
+        dmt.run()
+        region_id = dmt.get_message_response()
+        self.assertTrue(int(region_id) >= 0)
 
 # vim: set et ts=4 sw=4 :
