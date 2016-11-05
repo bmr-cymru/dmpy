@@ -456,6 +456,8 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(self.dmpytest0 == dmt.get_name())
 
     def test_task_get_info(self):
+        # Assert that a non-NULL DmInfo object is returned following a
+        # successful DM_DEVICE_INFO ioctl.
         import dmpy as dm
         dmt = dm.DmTask(dm.DM_DEVICE_INFO)
         dmt.set_name(self.dmpytest0)
@@ -464,7 +466,8 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(info)
 
     def test_task_info_fields_present(self):
-        # Assert that the info.exists flag is zero for a non-existent device.
+        # Assert that the info.exists flag is non-zero for a valid device, and
+        # that the dmpytest0 device has an active table, and is read-write.
         import dmpy as dm
         dmt = dm.DmTask(dm.DM_DEVICE_INFO)
         dmt.set_name(self.dmpytest0)
