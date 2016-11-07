@@ -668,4 +668,13 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         self.assertEqual(dmt.get_name(), self.dmpytest0)
 
+    def test_task_set_cookie(self):
+        # Create a DM_DEVICE_CREATE task and assert that setting a cookie
+        # returns True. FIXME: properly test udev cookie functionality.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
+        cookie = dm.DmCookie()
+        dmt.set_name(self.nodev)
+        self.assertTrue(dmt.set_cookie(cookie))
+
 # vim: set et ts=4 sw=4 :
