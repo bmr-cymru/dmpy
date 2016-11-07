@@ -698,4 +698,16 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         self.assertEqual(dmt.get_errno(), 6)
 
+    def test_task_set_sector(self):
+        # Assert that setting a message succeeds, and that the ioctl runs
+        # successfully and gives the expected response.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_TARGET_MSG)
+        dmt.set_name(self.dmpytest0)
+        dmt.set_message("@stats_list")
+        self.assertTrue(dmt.set_sector(0))
+        dmt.run()
+        response = dmt.get_message_response()
+        self.assertEqual(response, "")
+
 # vim: set et ts=4 sw=4 :
