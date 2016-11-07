@@ -1668,7 +1668,7 @@ static PyMethodDef DmTask_methods[] = {
         PyDoc_STR(DMTASK_get_driver_version__doc__)},
     {"get_info", (PyCFunction)DmTask_get_info, METH_NOARGS,
         PyDoc_STR(DMTASK_get_info__doc__)},
-    {"get_uuid", (PyCFunction)DmTask_get_uuid, METH_NOARGS,
+    {"get_uuid", (PyCFunction)DmTask_get_uuid, METH_VARARGS | METH_KEYWORDS,
         PyDoc_STR(DMTASK_get_uuid__doc__)},
     {"get_deps", (PyCFunction)DmTask_get_deps, METH_NOARGS,
         PyDoc_STR(DMTASK_get_deps__doc__)},
