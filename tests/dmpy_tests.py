@@ -677,4 +677,16 @@ class DmpyTests(unittest.TestCase):
         dmt.set_name(self.nodev)
         self.assertTrue(dmt.set_cookie(cookie))
 
+    def test_task_set_uid(self):
+        # Setting UIDs should be handled by udev rules now.
+        pass
+
+    def test_task_set_gid(self):
+        # Setting GIDs should be handled by udev rules now.
+        pass
+
+    def test_task_set_mode(self):
+        # Setting device node modes should be handled by udev rules now.
+        pass
+
 # vim: set et ts=4 sw=4 :
