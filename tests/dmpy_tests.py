@@ -544,7 +544,7 @@ class DmpyTests(unittest.TestCase):
         _remove_dm_device(self.dmpytest0)
         dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
         dmpyuuidtest0 = "dmpyuuidtest0"
-        self.dmpytest0 = dmpyuuidtest0 # for tearDown()
+        self.dmpytest0 = dmpyuuidtest0  # for tearDown()
         dmt.set_name(dmpyuuidtest0)
         dmt.run()
 
