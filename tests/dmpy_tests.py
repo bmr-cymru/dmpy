@@ -514,6 +514,16 @@ class DmpyTests(unittest.TestCase):
         info = dmt.get_info()
         self.assertFalse(info.exists)
 
+    def test_get_uuid(self):
+        # Get the device UUID with a DM_DEVICE_INFO ioctl, and assert that
+        # the command succeeds, and that the returned UUID string matches
+        # the stored value.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+        self.assertEqual(dmt.get_uuid(), self.dmpytest0_uuid)
+
     def test_set_message_run_response(self):
         # Assert that setting a message succeeds, and that the ioctl runs
         # successfully and gives the expected response.
