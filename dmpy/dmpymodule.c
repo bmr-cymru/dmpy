@@ -737,7 +737,7 @@ DmTask_run(DmTaskObject *self, PyObject *args)
     self->ob_flags |= DMT_DID_IOCTL;
 
     if (!(dm_task_run(self->ob_dmt))) {
-        self->ob_flags = DMT_DID_ERROR;
+        self->ob_flags |= DMT_DID_ERROR;
         errno = dm_task_get_errno(self->ob_dmt);
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
