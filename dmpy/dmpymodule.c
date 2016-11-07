@@ -560,30 +560,33 @@ static PyTypeObject DmInfo_Type = {
 #define DMT_HAVE_STATUS         0x00001000
 #define DMT_HAVE_TARGET_VERSIONS 0x00002000
 
+/* FIXME: maj/min? */
+#define DMT_HAVE_IDENTITY (DMT_HAVE_NAME | DMT_HAVE_UUID)
+
  /* Flags for each dm_task type indicating the expected output.
  *  Task flags are set in `DmTask.run()`. Entries in DM_DEVICE_* enum
  *  order.
  */
 static const uint32_t _DmTask_task_type_flags[] = {
-    DMT_HAVE_NAME,  /* CREATE */
-    DMT_HAVE_NAME,  /* RELOAD */
-    DMT_HAVE_NAME,  /* REMOVE */
+    DMT_HAVE_IDENTITY,  /* CREATE */
+    DMT_HAVE_IDENTITY,  /* RELOAD */
+    DMT_HAVE_IDENTITY,  /* REMOVE */
     0,              /* REMOVE_ALL */
-    DMT_HAVE_NAME,  /* SUSPEND */
-    DMT_HAVE_NAME,  /* RESUME */
-    (DMT_HAVE_NAME | DMT_HAVE_INFO),  /* INFO */
-    (DMT_HAVE_NAME | DMT_HAVE_DEPS),  /*DEPS */
-    DMT_HAVE_NAME,  /* RENAME */
+    DMT_HAVE_IDENTITY,  /* SUSPEND */
+    DMT_HAVE_IDENTITY,  /* RESUME */
+    (DMT_HAVE_IDENTITY | DMT_HAVE_INFO),  /* INFO */
+    (DMT_HAVE_IDENTITY | DMT_HAVE_DEPS),  /*DEPS */
+    DMT_HAVE_IDENTITY,  /* RENAME */
     0,  /* VERSION */
-    DMT_HAVE_NAME,  /* STATUS */
-    (DMT_HAVE_NAME | DMT_HAVE_TABLE),  /* TABLE */
-    DMT_HAVE_NAME,  /* WAITEVENT */
+    DMT_HAVE_IDENTITY,  /* STATUS */
+    (DMT_HAVE_IDENTITY | DMT_HAVE_TABLE),  /* TABLE */
+    DMT_HAVE_IDENTITY,  /* WAITEVENT */
     DMT_HAVE_NAME_LIST,  /* LIST */
-    DMT_HAVE_NAME,  /* CLEAR */
+    DMT_HAVE_IDENTITY,  /* CLEAR */
     0,  /* MKNODES */
     DMT_HAVE_TARGET_VERSIONS,  /* LIST_VERSIONS */
-    (DMT_HAVE_NAME | DMT_HAVE_MESSAGE),  /* TARGET_MSG */
-    DMT_HAVE_NAME  /* SET_GEOMETRY */
+    (DMT_HAVE_IDENTITY | DMT_HAVE_MESSAGE),  /* TARGET_MSG */
+    DMT_HAVE_IDENTITY  /* SET_GEOMETRY */
 };
 
 /* Names for DmTask data flags for use in exception strings. */
