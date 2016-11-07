@@ -736,4 +736,21 @@ class DmpyTests(unittest.TestCase):
         #
         # self.assertFalse(info.open_count)
 
+    def test_task_set_geometry(self):
+        # Assert that setting the geometry strings succeeds,
+        import dmpy as dm
+        geometry = ("62260", "255", "63", "64")
+        dmt = dm.DmTask(dm.DM_DEVICE_SET_GEOMETRY)
+        self.assertTrue(dmt.set_geometry(*geometry))
+        dmt.set_name(self.dmpytest0)
+        # FIXME: kernel bug?
+        # Trying to run this task, with kernel 4.7 and device-mapper 1.02.122
+        # fails with EINVAL, and an error in dmesg:
+        #
+        #   ioctl: Unable to interpret geometry settings.
+        #
+        # Indicating the wrong number of string arguments received by
+        # drivers/md/dm-ioctl.c:dev_set_geometry().
+        #dmt.run()
+
 # vim: set et ts=4 sw=4 :
