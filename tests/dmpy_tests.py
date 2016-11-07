@@ -118,14 +118,18 @@ def _remove_loopback(loop_device):
     unlink(loop_file)
 
 
-def _create_linear_device(dev, size):
+def _create_linear_device(dev, size, uuid=_new_uuid):
     dm_name = "dmpytest0"
     sectors = size >> 9
 
-    uuid = _new_uuid()
-    r = _get_cmd_output("dmsetup create %s --uuid %s "
+    # if UUID is callable, call it.
+    if hasattr(uuid, "__call__"):
+        uuid = uuid()
+
+    uuid_arg = ("--uuid %s" % uuid) if uuid else ""
+    r = _get_cmd_output("dmsetup create %s %s "
                         "--table='0 %d ""linear %s 0'" %
-                        (dm_name, uuid, sectors, dev))
+                        (dm_name, uuid_arg, sectors, dev))
     if r[0]:
         raise OSError("Failed to create linear device.")
 
