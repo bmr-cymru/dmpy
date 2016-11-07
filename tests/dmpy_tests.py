@@ -689,4 +689,13 @@ class DmpyTests(unittest.TestCase):
         # Setting device node modes should be handled by udev rules now.
         pass
 
+    def test_task_get_errno(self):
+        # Run a DM_DEVICE_INFO ioctl for a non-existent device, and assert
+        # that the errno returned by DmTask.get_errno() is 6 (ENXIO).
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.nodev)
+        dmt.run()
+        self.assertEqual(dmt.get_errno(), 6)
+
 # vim: set et ts=4 sw=4 :
