@@ -30,6 +30,8 @@ _uuid_prefix = "DMPY-"
 _uuid_format = "%s%s%x"
 _uuid_filler = "12345678"
 
+_dev_mapper = "/dev/mapper"
+
 
 def _new_uuid():
     rand = random() * 2 ** 32
@@ -281,7 +283,7 @@ class DmpyTests(unittest.TestCase):
         # Assert that a call to dmpy.lib_release() closes the ioctl file
         # descriptor.
         import dmpy as dm
-        dev_mapper_control = "/dev/mapper/control"
+        dev_mapper_control = join(_dev_mapper, "control")
         control_fd_path = "/proc/self/fd/3"
 
         # Run a DM_DEVICE_LIST to open the ioctl fd.
@@ -301,7 +303,7 @@ class DmpyTests(unittest.TestCase):
         # dm.lib_release(), and that it is closed after hold_control_dev is
         # disabled and a second call to dm_lib_release() made.
         import dmpy as dm
-        dev_mapper_control = "/dev/mapper/control"
+        dev_mapper_control = join(_dev_mapper, "control")
         control_fd_path = "/proc/self/fd/3"
 
         # Enable holding the control fd.
