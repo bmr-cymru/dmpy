@@ -657,4 +657,15 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         self.assertEqual(dmt.get_name(), self.dmpytest0)
 
+    def test_task_set_major_minor(self):
+        # Send a DM_DEVICE_INFO task by major and minor number, and assert
+        # that the expected device name is returned.
+        import dmpy as dm
+        dev_path = join(_dev_mapper, self.dmpytest0)
+        (major, minor) = _get_major_minor_from_stat(dev_path)
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_major_minor(major, minor)
+        dmt.run()
+        self.assertEqual(dmt.get_name(), self.dmpytest0)
+
 # vim: set et ts=4 sw=4 :
