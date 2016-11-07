@@ -589,4 +589,16 @@ class DmpyTests(unittest.TestCase):
 
         self.assertEqual(dmt.get_errno(), 22)  # EINVAL
 
+    def test_task_get_driver_version(self):
+        # Assert that we can obtain the driver version from a task, and
+        # that the result matches that obtained from dmsetup.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+        _dmsetup_driver_version = _get_driver_version_from_dmsetup()
+        _driver_version = dmt.get_driver_version()
+        self.assertTrue(_driver_version)
+        self.assertEqual(_dmsetup_driver_version, _driver_version)
+
 # vim: set et ts=4 sw=4 :
