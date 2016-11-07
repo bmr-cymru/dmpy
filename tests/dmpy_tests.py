@@ -154,9 +154,12 @@ class DmpyTests(unittest.TestCase):
         _get_cmd_output("udevadm settle")
 
     def setUp(self):
+        uuid = _new_uuid()
         dev_size = self.test_dev_size_bytes
         self.loop0 = _create_loopback("/var/tmp/", dev_size)
-        self.dmpytest0 = _create_linear_device(self.loop0[0], dev_size)
+        self.dmpytest0_uuid = uuid
+        self.dmpytest0 = _create_linear_device(self.loop0[0],
+                                               dev_size, uuid=uuid)
 
     def tearDown(self):
         self.udev_settle()
