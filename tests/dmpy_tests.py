@@ -30,8 +30,6 @@ _uuid_prefix = "DMPY-"
 _uuid_format = "%s%s%x"
 _uuid_filler = "12345678"
 
-_udev_settle_delay = 0.199  # seconds (100ms)
-
 
 def _new_uuid():
     rand = random() * 2 ** 32
@@ -148,13 +146,16 @@ class DmpyTests(unittest.TestCase):
     loop0 = None
     dmpytest0 = None
 
+    def udev_settle(self):
+        _get_cmd_output("udevadm settle")
+
     def setUp(self):
         dev_size = self.test_dev_size_bytes
         self.loop0 = _create_loopback("/var/tmp/", dev_size)
         self.dmpytest0 = _create_linear_device(self.loop0[0], dev_size)
 
     def tearDown(self):
-        _get_cmd_output("udevadm settle")
+        self.udev_settle()
         if (self.dmpytest0):
             _remove_dm_device(self.dmpytest0)
         if (self.loop0):
