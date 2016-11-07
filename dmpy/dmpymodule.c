@@ -30,12 +30,13 @@
 
 #define DMPY_VERSION_BUF_LEN 64
 
-#ifdef __linux__
-    #include "linux/kdev_t.h"
-#else
-    #define MAJOR(x) major((x))
-    #define MINOR(x) minor((x))
-#endif
+/* The MAJOR and MINOR macros exported in uapi/linux/kdev_t.h do not
+ * work with "huge" device numbers (>8bit minor, for e.g.). Use the
+ * definitions found in lvm2/libdm/misc/kdev_t.h instead.
+ */
+#define MAJOR(dev)      ((dev & 0xfff00) >> 8)
+#define MINOR(dev)      ((dev & 0xff) | ((dev >> 12) & 0xfff00))
+#define MKDEV(ma,mi)    ((mi & 0xff) | (ma << 8) | ((mi & ~0xff) << 12))
 
 #define DMPY_DEBUG 1
 
@@ -827,7 +828,7 @@ _dm_build_deps_list(struct dm_deps *deps)
 
     for (i = 0; i < deps->count; i++) {
         dev = deps->device[i];
-        value = Py_BuildValue("(ii)", MAJOR(dev), MINOR(dev));
+        value = Py_BuildValue("(ii)", (int) MAJOR(dev), (int) MINOR(dev));
         if (!value)
             goto fail;
         PyList_Append(deps_list, value);
