@@ -733,6 +733,9 @@ DmTask_set_uuid(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_run(DmTaskObject *self, PyObject *args)
 {
+    /* DMT_DID_IOCTL does not imply success. */
+    self->ob_flags |= DMT_DID_IOCTL;
+
     if (!(dm_task_run(self->ob_dmt))) {
         self->ob_flags = DMT_DID_ERROR;
         errno = dm_task_get_errno(self->ob_dmt);
@@ -742,7 +745,6 @@ DmTask_run(DmTaskObject *self, PyObject *args)
 
     /* set data flags from task type */
     self->ob_flags |= _DmTask_task_type_flags[self->ob_task_type];
-    self->ob_flags |= DMT_DID_IOCTL;
 
     Py_INCREF(Py_None);
     return Py_None;
