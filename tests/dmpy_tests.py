@@ -54,6 +54,10 @@ def _get_cmd_output(cmd):
     return (p.returncode, stdout.decode('utf-8'))
 
 
+def _read_ahead_from_blockdev(dev_path):
+    return int(_get_cmd_output("blockdev --getra %s" % dev_path)[1])
+
+
 def _get_major_minor_from_stat(dev_path):
     st_buf = stat(dev_path)
     return (major(st_buf.st_rdev), minor(st_buf.st_rdev))
