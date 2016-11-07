@@ -710,4 +710,13 @@ class DmpyTests(unittest.TestCase):
         response = dmt.get_message_response()
         self.assertEqual(response, "")
 
+    def test_task_no_flush(self):
+        # Assert that setting noflush on a DM_DEVICE_SUSPEND task succeeds.
+        # FIXME: no testing of the flag's behaviour is done.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_SUSPEND)
+        dmt.set_name(self.dmpytest0)
+        self.assertTrue(dmt.no_flush())
+        dmt.run()
+
 # vim: set et ts=4 sw=4 :
