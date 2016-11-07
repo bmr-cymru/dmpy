@@ -1523,6 +1523,9 @@ DmTask_get_errno(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, -1, "get_errno"))
         return NULL;
 
+    if (!(self->ob_flags && DMT_DID_ERROR))
+        return 0;
+
     return Py_BuildValue("i", dm_task_get_errno(self->ob_dmt));
 }
 
