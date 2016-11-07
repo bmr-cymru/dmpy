@@ -16,7 +16,7 @@
 
 import unittest
 import shlex
-from os import readlink, unlink
+from os import readlink, unlink, stat, major, minor
 from os.path import exists, join
 from subprocess import Popen, PIPE, STDOUT
 from random import random
@@ -52,6 +52,11 @@ def _get_cmd_output(cmd):
 
     # Change the codec if testing in a non-utf8 environment.
     return (p.returncode, stdout.decode('utf-8'))
+
+
+def _get_major_minor_from_stat(dev_path):
+    st_buf = stat(dev_path)
+    return (major(st_buf.st_rdev), minor(st_buf.st_rdev))
 
 
 def _get_dm_major_from_dm_0_sysfs():
@@ -523,6 +528,22 @@ class DmpyTests(unittest.TestCase):
         dmt.set_name(self.dmpytest0)
         dmt.run()
         self.assertEqual(dmt.get_uuid(), self.dmpytest0_uuid)
+
+    def test_get_deps(self):
+        # Assert that a deps list is returned following a DM_DEVICE_DEPS
+        # command, and that the major/minor number(s) of the dependencies
+        # are as expected.
+        import dmpy as dm
+        # Stat the device for comparison
+        (maj_stat, min_stat) = _get_major_minor_from_stat(self.loop0[0])
+        dmt = dm.DmTask(dm.DM_DEVICE_DEPS)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+        deps = dmt.get_deps()
+        # Expects: [(maj,min)]
+        self.assertEqual(len(deps), 1)
+        self.assertEqual(deps[0][0], maj_stat)
+        self.assertEqual(deps[0][1], min_stat)
 
     def test_set_message_run_response(self):
         # Assert that setting a message succeeds, and that the ioctl runs
