@@ -536,4 +536,36 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         self.assertEqual(dmt.get_name(), newname)
 
+    def test_set_newuuid_with_no_uuid(self):
+        # Assert that we can set a new UUID for a device that has none,
+        # and that the new UUID is returned as expected.
+        import dmpy as dm
+        # We need a device with no UUID set.
+        _remove_dm_device(self.dmpytest0)
+        dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
+        dmpyuuidtest0 = "dmpyuuidtest0"
+        self.dmpytest0 = dmpyuuidtest0 # for tearDown()
+        dmt.set_name(dmpyuuidtest0)
+        dmt.run()
+
+        # Wait for udev to catch up
+        self.udev_settle()
+
+        # Generate a new UUID and apply it to the test device with a
+        # DM_DEVICE_RENAME task.
+        newuuid = _new_uuid()
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dmt.set_name(self.dmpytest0)
+        # Assert that the new UUID is set.
+        self.assertTrue(dmt.set_newuuid(newuuid))
+        dmt.run()
+
+        # Get a DM_DEVICE_INFO of the device to compare.
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        dmt.run()
+
+        # Assert that the retrieved UUID matches.
+        self.assertEqual(dmt.get_uuid(), newuuid)
+
 # vim: set et ts=4 sw=4 :
