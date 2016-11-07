@@ -568,4 +568,25 @@ class DmpyTests(unittest.TestCase):
         # Assert that the retrieved UUID matches.
         self.assertEqual(dmt.get_uuid(), newuuid)
 
+    def test_newuuid_with_uuid_set_fails(self):
+        # Assert that attempting to set a UUID on an active device that
+        # already has one set raises an exception.
+        import dmpy as dm
+
+        # Generate a new UUID and apply it to the test device with a
+        # DM_DEVICE_RENAME task.
+        newuuid = _new_uuid()
+        dmt = dm.DmTask(dm.DM_DEVICE_RENAME)
+        dmt.set_name(self.dmpytest0)
+
+        # Assert that the new UUID is set: this should succeed, and the
+        # subsequent dmt.run() should raise an exception based on the
+        # errno set by the task ioctl.
+        self.assertTrue(dmt.set_newuuid(newuuid))
+
+        with self.assertRaises(OSError) as cm:
+            dmt.run()
+
+        self.assertEqual(dmt.get_errno(), 22)  # EINVAL
+
 # vim: set et ts=4 sw=4 :
