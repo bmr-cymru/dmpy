@@ -719,4 +719,21 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dmt.no_flush())
         dmt.run()
 
+    def test_task_no_open_count(self):
+        # Assert that setting no_open_count on a DM_DEVICE_INFO task succeeds,
+        # and that the resulting task open count is zero.
+        import dmpy as dm
+        dmt = dm.DmTask(dm.DM_DEVICE_INFO)
+        dmt.set_name(self.dmpytest0)
+        self.assertTrue(dmt.no_open_count())
+        dmt.run()
+        info = dmt.get_info()
+        # NOTE: with kernel-4.7 and device-mapper 1.02.122 the open count is
+        # returned regardless of the setting of no_open_count: the following
+        # assertion is true simply because the test device is not open. If
+        # the block is enclosed in a 'with' clause that opens the device, it
+        # will fail.
+        #
+        # self.assertFalse(info.open_count)
+
 # vim: set et ts=4 sw=4 :
