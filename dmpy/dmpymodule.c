@@ -2078,6 +2078,17 @@ _dmpy_udev_get_checking(PyObject *self, PyObject *args)
     return Py_BuildValue("i", dm_udev_get_checking());
 }
 
+static PyObject *
+_dmpy_cookie_supported(PyObject *self, PyObject *args)
+{
+    PyObject *ret = Py_True;
+    int cookie_supported = dm_cookie_supported();
+    if (!cookie_supported)
+        ret = Py_False;
+    Py_INCREF(ret);
+    return ret;
+}
+
 /* List of functions defined in the module */
 
 #define DMPY_get_library_version__doc__ "Get the version of the device-mapper" \
@@ -2148,6 +2159,10 @@ _dmpy_udev_get_checking(PyObject *self, PyObject *args)
 #define DMPY_udev_get_checking__doc__ \
 "Return the status of udev synchronization checks for the dmpy module."
 
+#define DMPY_cookie_supported__doc__ \
+"Return True if device-mapper supports udev synchronization cookies, " \
+"or False otherwise."
+
 #define DMPY___doc__ \
 ""
 
@@ -2192,6 +2207,8 @@ static PyMethodDef dmpy_methods[] = {
         METH_VARARGS, PyDoc_STR(DMPY_udev_set_checking__doc__)},
     {"udev_get_checking", (PyCFunction)_dmpy_udev_get_checking,
         METH_NOARGS, PyDoc_STR(DMPY_udev_get_checking__doc__)},
+    {"cookie_supported", (PyCFunction)_dmpy_cookie_supported,
+        METH_NOARGS, PyDoc_STR(DMPY_cookie_supported__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
