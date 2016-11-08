@@ -2038,6 +2038,26 @@ _dmpy_dump_memory(PyObject *self, PyObject *args)
     return Py_True;
 }
 
+static PyObject *
+_dmpy_udev_set_sync_support(PyObject *self, PyObject *args)
+{
+    int sync_with_udev;
+
+    if (!PyArg_ParseTuple(args, "i:udev_set_sync_support", &sync_with_udev))
+        return NULL;
+
+    dm_udev_set_sync_support(sync_with_udev);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject *
+_dmpy_udev_get_sync_support(PyObject *self, PyObject *args)
+{
+    return Py_BuildValue("i", dm_udev_get_sync_support());
+}
+
 /* List of functions defined in the module */
 
 #define DMPY_get_library_version__doc__ "Get the version of the device-mapper" \
@@ -2096,6 +2116,12 @@ _dmpy_dump_memory(PyObject *self, PyObject *args)
 #define DMPY_dump_memory__doc__ \
 "Call dm_dump_memory() to dump memory debugging information to the log."
 
+#define DMPY_udev_set_sync_support__doc__ \
+"Enable or disable udev synchronization for the dmpy module."
+
+#define DMPY_udev_get_sync_support__doc__ \
+"Return the status of udev synchronization for the dmpy module."
+
 #define DMPY___doc__ \
 ""
 
@@ -2132,6 +2158,10 @@ static PyMethodDef dmpy_methods[] = {
         PyDoc_STR(DMPY_driver_version__doc__)},
     {"dump_memory", (PyCFunction)_dmpy_dump_memory, METH_NOARGS,
         PyDoc_STR(DMPY_dump_memory__doc__)},
+    {"udev_set_sync_support", (PyCFunction)_dmpy_udev_set_sync_support,
+        METH_VARARGS, PyDoc_STR(DMPY_udev_set_sync_support__doc__)},
+    {"udev_get_sync_support", (PyCFunction)_dmpy_udev_get_sync_support,
+        METH_NOARGS, PyDoc_STR(DMPY_udev_get_sync_support__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
