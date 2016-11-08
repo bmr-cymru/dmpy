@@ -2135,6 +2135,66 @@ static PyMethodDef dmpy_methods[] = {
     {NULL, NULL}           /* sentinel */
 };
 
+/* Device-mapper UDEV flags */
+static const uint32_t _dmpy_udev_flags[] = {
+    DM_UDEV_DISABLE_DM_RULES_FLAG,
+    DM_UDEV_DISABLE_SUBSYSTEM_RULES_FLAG,
+    DM_UDEV_DISABLE_DISK_RULES_FLAG,
+    DM_UDEV_DISABLE_OTHER_RULES_FLAG,
+    DM_UDEV_LOW_PRIORITY_FLAG,
+    DM_UDEV_DISABLE_LIBRARY_FALLBACK,
+    DM_UDEV_PRIMARY_SOURCE_FLAG,
+    DM_SUBSYSTEM_UDEV_FLAG0,
+    DM_SUBSYSTEM_UDEV_FLAG1,
+    DM_SUBSYSTEM_UDEV_FLAG2,
+    DM_SUBSYSTEM_UDEV_FLAG3,
+    DM_SUBSYSTEM_UDEV_FLAG4,
+    DM_SUBSYSTEM_UDEV_FLAG5,
+    DM_SUBSYSTEM_UDEV_FLAG6,
+    DM_SUBSYSTEM_UDEV_FLAG7,
+    0
+};
+
+/* Order matches _dmpy_udev_flags */
+static const char *_dmpy_udev_flag_names[] = {
+    "UDEV_DISABLE_DM_RULES_FLAG",
+    "UDEV_DISABLE_SUBSYSTEM_RULES_FLAG",
+    "UDEV_DISABLE_DISK_RULES_FLAG",
+    "UDEV_DISABLE_OTHER_RULES_FLAG",
+    "UDEV_LOW_PRIORITY_FLAG",
+    "UDEV_DISABLE_LIBRARY_FALLBACK",
+    "UDEV_PRIMARY_SOURCE_FLAG",
+    "SUBSYSTEM_UDEV_FLAG0",
+    "SUBSYSTEM_UDEV_FLAG1",
+    "SUBSYSTEM_UDEV_FLAG2",
+    "SUBSYSTEM_UDEV_FLAG3",
+    "SUBSYSTEM_UDEV_FLAG4",
+    "SUBSYSTEM_UDEV_FLAG5",
+    "SUBSYSTEM_UDEV_FLAG6",
+    "SUBSYSTEM_UDEV_FLAG7",
+    NULL
+};
+
+/*
+ * Add module variables for DM_UDEV_* and DM_SUBSYSTEM_UDEV_* flags.
+ */
+static int _dmpy_add_udev_flags(PyObject *m)
+{
+    const uint32_t *flag = _dmpy_udev_flags;
+    const char **flag_name = &_dmpy_udev_flag_names[0];
+    PyObject *flag_value;
+
+    while(*flag && *flag_name) {
+        flag_value = PyLong_FromLong((long) *flag);
+        if (!flag_value)
+            return -1;
+        PyModule_AddObject(m, *flag_name, flag_value);
+        flag_name++;
+        flag++;
+    }
+    return 0;
+}
+
 /* Add module variables for DM_READ_AHEAD_* constants.
  */
 static int _dmpy_add_read_ahead_types(PyObject *m)
@@ -2312,6 +2372,9 @@ dmpy_exec(PyObject *m)
         goto fail;
 
     if (_dmpy_add_read_ahead_types(m))
+        goto fail;
+
+    if (_dmpy_add_udev_flags(m))
         goto fail;
 
     return 0;
