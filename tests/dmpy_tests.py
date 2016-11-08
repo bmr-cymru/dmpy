@@ -374,6 +374,16 @@ class DmpyTests(unittest.TestCase):
         dm.udev_set_checking(1)
         self.assertEqual(dm.udev_get_checking(), 1)
 
+    def test_cookie_supported(self):
+        # Assert that the library returns the expected value of cookie_supported
+        # depending on the library major/minor version values.
+        import dmpy as dm
+        (major, minor, patch) = map(int, dm.driver_version().split("."))
+        if major >= 4 and minor >=15:
+            self.assertTrue(dm.cookie_supported())
+        else:
+            self.assertFalse(dm.cookie_supported())
+
     #
     # DmTask tests.
     #
