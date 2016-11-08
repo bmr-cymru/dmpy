@@ -358,6 +358,22 @@ class DmpyTests(unittest.TestCase):
         self.assertEqual(dm.udev_get_sync_support(), 0)
         dm.udev_set_sync_support(1)
         self.assertEqual(dm.udev_get_sync_support(), 1)
+
+    def test_set_get_udev_checks(self):
+        # Assert that we get the expected result back after setting the
+        # udev synchronization mode.
+        import dmpy as dm
+
+        # Change this if your libdevmapper was built with differnt defaults.
+        initial_udev_check = 1
+
+        self.assertEqual(dm.udev_get_checking(), initial_udev_check)
+        # Try turning it off and on again.
+        dm.udev_set_checking(0)
+        self.assertEqual(dm.udev_get_checking(), 0)
+        dm.udev_set_checking(1)
+        self.assertEqual(dm.udev_get_checking(), 1)
+
     #
     # DmTask tests.
     #
