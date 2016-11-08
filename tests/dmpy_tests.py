@@ -27,15 +27,14 @@ DM_MAX_UUID_PREFIX_LEN = 15
 
 # Format for dmpytestN test devices.
 _uuid_prefix = "DMPY-"
-_uuid_format = "%s%s%x"
-_uuid_filler = "12345678"
+_uuid_format = "%s%x"
 
 _dev_mapper = "/dev/mapper"
 
 
 def _new_uuid():
-    rand = random() * 2 ** 32
-    return _uuid_format % (_uuid_prefix, _uuid_filler, int(rand))
+    rand = random() * 2 ** 64
+    return _uuid_format % (_uuid_prefix, int(rand))
 
 
 def _get_cmd_output(cmd):
