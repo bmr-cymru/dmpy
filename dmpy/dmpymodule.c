@@ -356,6 +356,17 @@ DmCookie_set_base(DmCookieObject *self, PyObject *args)
     return Py_True;
 }
 
+static PyObject *
+DmCookie_udev_complete(DmCookieObject *self, PyObject *args)
+{
+    PyObject *ret;
+    int r;
+    r = dm_udev_complete(self->ob_cookie);
+    ret = (r) ? Py_True : Py_False;
+    Py_INCREF(ret);
+    return ret;
+}
+
 #define DMCOOKIE_set_value__doc__ \
 "Set the value of this DmCookie to the given integer. The cookie is "   \
 "stored internally as a 32-bit value by the kernel and device-mapper: " \
@@ -371,12 +382,17 @@ DmCookie_set_base(DmCookieObject *self, PyObject *args)
 "stored internally as a 16-bit value by the kernel and device-mapper: " \
 "attempting to store a larger base will raise a ValueError."
 
+#define DMCOOKIE_udev_complete__doc__ \
+"Complete the UDEV transaction for this cookie."
+
 static PyMethodDef DmCookie_methods[] = {
     {"set_value", (PyCFunction)DmCookie_set_value, METH_VARARGS,
         PyDoc_STR(DMCOOKIE_set_value__doc__)},
     {"set_prefix", (PyCFunction)DmCookie_set_prefix, METH_VARARGS,
         PyDoc_STR(DMCOOKIE_set_value__doc__)},
     {"set_base", (PyCFunction)DmCookie_set_base, METH_VARARGS,
+        PyDoc_STR(DMCOOKIE_set_value__doc__)},
+    {"udev_complete", (PyCFunction)DmCookie_udev_complete, METH_VARARGS,
         PyDoc_STR(DMCOOKIE_set_value__doc__)},
     {NULL, NULL}
 };
@@ -2109,6 +2125,17 @@ _dmpy_udev_create_cookie(PyObject *self, PyObject *args)
     return (PyObject *) cookie;
 }
 
+static PyObject *
+_dmpy_udev_complete(PyObject *self, PyObject *args)
+{
+    DmCookieObject *cookie;
+
+    if (!PyArg_ParseTuple(args, "O!", &DmCookie_Type, &cookie))
+        return NULL;
+
+    return DmCookie_udev_complete(cookie, NULL);
+}
+
 /* List of functions defined in the module */
 
 #define DMPY_get_library_version__doc__ "Get the version of the device-mapper" \
@@ -2186,6 +2213,9 @@ _dmpy_udev_create_cookie(PyObject *self, PyObject *args)
 #define DMPY_udev_create_cookie__doc__ \
 "Create a new device-mapper UDEV cookie for use in later operations."
 
+#define DMPY_udev_complete__doc__ \
+"Complete the UDEV transaction for this cookie."
+
 #define DMPY___doc__ \
 ""
 
@@ -2234,6 +2264,8 @@ static PyMethodDef dmpy_methods[] = {
         METH_NOARGS, PyDoc_STR(DMPY_cookie_supported__doc__)},
     {"udev_create_cookie", (PyCFunction)_dmpy_udev_create_cookie,
         METH_NOARGS, PyDoc_STR(DMPY_udev_create_cookie__doc__)},
+    {"udev_complete", (PyCFunction)_dmpy_udev_complete,
+        METH_NOARGS, PyDoc_STR(DMPY_udev_complete__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
