@@ -168,6 +168,9 @@ class DmpyTests(unittest.TestCase):
     def udev_settle(self):
         _get_cmd_output("udevadm settle")
 
+    def loop_minor(self, loop_name):
+        return int(loop_name.split("loop")[1])
+
     def setUp(self):
         uuid = _new_uuid()
         dev_size = self.test_dev_size_bytes
