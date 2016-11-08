@@ -100,6 +100,10 @@ def _get_dm_major():
             return 253
 
 
+def _get_table_from_dmsetup(dm_name):
+    return _get_cmd_output("dmsetup table %s" % dm_name)[1].strip()
+
+
 def _get_driver_version_from_dmsetup():
     for line in _get_cmd_output("dmsetup version")[1].splitlines():
         if not line.startswith("Driver version"):
