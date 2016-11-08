@@ -384,6 +384,15 @@ class DmpyTests(unittest.TestCase):
         else:
             self.assertFalse(dm.cookie_supported())
 
+
+    def test_udev_create_cookie(self):
+        # Assert that a new cookie, with non-zero value is created following a
+        # call to dmpy.udev_create_cookie().
+        import dmpy as dm
+        cookie = dm.udev_create_cookie()
+        self.assertTrue(cookie)
+        self.assertTrue(cookie.value)
+
     #
     # DmTask tests.
     #
