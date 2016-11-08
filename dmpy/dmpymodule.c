@@ -244,7 +244,7 @@ static PyTypeObject DmTimestamp_Type = {
 
 typedef struct {
     PyObject_HEAD
-    uint32_t ob_value;
+    uint32_t ob_cookie;
     uint16_t ob_val_prefix;
     uint16_t ob_val_base;
 } DmCookieObject;
@@ -256,8 +256,8 @@ static PyTypeObject DmCookie_Type;
 static void
 _dmpy_set_cookie_values(DmCookieObject *self)
 {
-    self->ob_val_base = self->ob_value & ~DM_UDEV_FLAGS_MASK;
-    self->ob_val_prefix = ((self->ob_value & DM_UDEV_FLAGS_MASK)
+    self->ob_val_base = self->ob_cookie & ~DM_UDEV_FLAGS_MASK;
+    self->ob_val_prefix = ((self->ob_cookie & DM_UDEV_FLAGS_MASK)
                            >> DM_UDEV_FLAGS_SHIFT);
 }
 
@@ -284,7 +284,7 @@ DmCookie_init(DmCookieObject *self, PyObject *args, PyObject *kwds)
     if (_dmpy_check_cookie_value(value))
         return -1;
 
-    self->ob_value = (uint32_t) value;
+    self->ob_cookie = (uint32_t) value;
     _dmpy_set_cookie_values(self);
     return 0;
 }
@@ -300,7 +300,7 @@ DmCookie_set_value(DmCookieObject *self, PyObject *args)
     if (!_dmpy_check_cookie_value(value))
         return NULL;
 
-    self->ob_value = (uint32_t) value;
+    self->ob_cookie = (uint32_t) value;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_True);
@@ -330,8 +330,8 @@ DmCookie_set_prefix(DmCookieObject *self, PyObject *args)
 
     prefix <<= DM_UDEV_FLAGS_SHIFT;
 
-    self->ob_value = (uint32_t) (self->ob_value & ~DM_UDEV_FLAGS_MASK);
-    self->ob_value |= prefix;
+    self->ob_cookie = (uint32_t) (self->ob_cookie & ~DM_UDEV_FLAGS_MASK);
+    self->ob_cookie |= prefix;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_True);
@@ -348,8 +348,8 @@ DmCookie_set_base(DmCookieObject *self, PyObject *args)
     if (_dmpy_check_base_or_prefix_value(base))
         return NULL;
 
-    self->ob_value = (uint32_t) (self->ob_value & DM_UDEV_FLAGS_MASK);
-    self->ob_value |= base;
+    self->ob_cookie = (uint32_t) (self->ob_cookie & DM_UDEV_FLAGS_MASK);
+    self->ob_cookie |= base;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_True);
@@ -384,7 +384,7 @@ static PyMethodDef DmCookie_methods[] = {
 /* Attributes for DmCookieObject struct members.
  */
 static PyMemberDef DmCookie_members[] = {
-    {"value", T_INT, offsetof(DmCookieObject, ob_value), READONLY,
+    {"value", T_INT, offsetof(DmCookieObject, ob_cookie), READONLY,
      PyDoc_STR("The current value of this `DmCookie`.")},
     {"prefix", T_SHORT, offsetof(DmCookieObject, ob_val_prefix), READONLY,
      PyDoc_STR("The current prefix value of this `DmCookie`.")},
@@ -1212,7 +1212,7 @@ DmTask_set_cookie(DmTaskObject *self, PyObject *args)
     Py_INCREF(cookie);
     self->ob_cookie = cookie;
 
-    if (!dm_task_set_cookie(self->ob_dmt, &cookie->ob_value, flags)) {
+    if (!dm_task_set_cookie(self->ob_dmt, &cookie->ob_cookie, flags)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask cookie.");
         goto fail;
     }
@@ -2089,6 +2089,26 @@ _dmpy_cookie_supported(PyObject *self, PyObject *args)
     return ret;
 }
 
+static PyObject *
+_dmpy_udev_create_cookie(PyObject *self, PyObject *args)
+{
+    DmCookieObject *cookie;
+    uint32_t cookie_val;
+
+    if (!dm_udev_create_cookie(&cookie_val)) {
+        PyErr_SetFromErrno(PyExc_OSError);
+        return NULL;
+    }
+
+    cookie = PyObject_New(DmCookieObject, &DmCookie_Type);
+    if (!cookie)
+        return NULL;
+
+    cookie->ob_cookie = cookie_val;
+    _dmpy_set_cookie_values(cookie);
+    return (PyObject *) cookie;
+}
+
 /* List of functions defined in the module */
 
 #define DMPY_get_library_version__doc__ "Get the version of the device-mapper" \
@@ -2163,6 +2183,9 @@ _dmpy_cookie_supported(PyObject *self, PyObject *args)
 "Return True if device-mapper supports udev synchronization cookies, " \
 "or False otherwise."
 
+#define DMPY_udev_create_cookie__doc__ \
+"Create a new device-mapper UDEV cookie for use in later operations."
+
 #define DMPY___doc__ \
 ""
 
@@ -2209,6 +2232,8 @@ static PyMethodDef dmpy_methods[] = {
         METH_NOARGS, PyDoc_STR(DMPY_udev_get_checking__doc__)},
     {"cookie_supported", (PyCFunction)_dmpy_cookie_supported,
         METH_NOARGS, PyDoc_STR(DMPY_cookie_supported__doc__)},
+    {"udev_create_cookie", (PyCFunction)_dmpy_udev_create_cookie,
+        METH_NOARGS, PyDoc_STR(DMPY_udev_create_cookie__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
