@@ -734,6 +734,23 @@ class DmpyTests(unittest.TestCase):
         # the block is enclosed in a 'with' clause that opens the device, it
         # will fail.
         #
+        # The code that implemented "no_open_count" was removed from the
+        # kernel in 2006:
+        #
+        #  commit 5c6bd75d06db512515a3781aa97e42df2faf0815
+        #  Author: Alasdair G Kergon <agk@redhat.com>
+        #  Date:   Mon Jun 26 00:27:34 2006 -0700
+        #
+        #  [PATCH] dm: prevent removal if open
+        #
+        # And the DM_SKIP_BDGET_FLAG that implements it was marked as
+        # ignored:
+        #
+        # /*
+        #  * This flag is now ignored.
+        #  */
+        # #define DM_SKIP_BDGET_FLAG      (1 << 9) /* In */
+        #
         # self.assertFalse(info.open_count)
 
     def test_task_set_geometry(self):
