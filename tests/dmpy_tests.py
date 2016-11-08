@@ -344,6 +344,20 @@ class DmpyTests(unittest.TestCase):
         # FIXME: test with custom logging fn?
         pass
 
+    def test_set_get_udev_sync(self):
+        # Assert that we get the expected result back after setting the
+        # udev synchronization mode.
+        import dmpy as dm
+
+        # Change this if your libdevmapper was built with differnt defaults.
+        initial_udev_sync = 1
+
+        self.assertEqual(dm.udev_get_sync_support(), initial_udev_sync)
+        # Try turning it off and on again.
+        dm.udev_set_sync_support(0)
+        self.assertEqual(dm.udev_get_sync_support(), 0)
+        dm.udev_set_sync_support(1)
+        self.assertEqual(dm.udev_get_sync_support(), 1)
     #
     # DmTask tests.
     #
