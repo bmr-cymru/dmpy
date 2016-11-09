@@ -921,6 +921,17 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(cookie.udev_wait())
         self.assertTrue(cookie.ready)
 
+    def test_cookie_multiple_wait(self):
+        # Create a new cookie, wait on it, and assert that a further attempt
+        # to call udev_wait() raises a ValueError exception.
+        import dmpy as dm
+        cookie = dm.udev_create_cookie()
+        self.assertFalse(cookie.ready)
+        self.assertTrue(cookie.udev_wait())
+        self.assertTrue(cookie.ready)
+        with self.assertRaises(ValueError) as cm:
+            cookie.udev_wait()
+
     def test_cookie_wait_immediate(self):
         # Create a new cookie, wait on it, and assert that it becomes ready.
         import dmpy as dm
@@ -940,6 +951,7 @@ class DmpyTests(unittest.TestCase):
             sleep(_udev_wait_delay)
 
         self.assertTrue(cookie.ready)
+
 
 
 # vim: set et ts=4 sw=4 :
