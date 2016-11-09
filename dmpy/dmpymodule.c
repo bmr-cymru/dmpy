@@ -378,6 +378,42 @@ DmCookie_udev_complete(DmCookieObject *self, PyObject *args)
     return ret;
 }
 
+static PyObject *
+_DmCookie_udev_wait(DmCookieObject *self, int immediate)
+{
+    PyObject *ret;
+    int r, ready;
+
+    if (!immediate)
+        r = dm_udev_wait(self->ob_cookie);
+    else
+        r = dm_udev_wait_immediate(self->ob_cookie, &ready);
+
+    ret = (r) ? Py_True : Py_False;
+    Py_INCREF(ret);
+
+    if (r && immediate && ready) {
+        Py_DECREF(self->ob_ready);
+        Py_INCREF(Py_True);
+        self->ob_ready = Py_True;
+    }
+
+    return ret;
+}
+
+static PyObject *
+DmCookie_udev_wait(DmCookieObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"immediate", NULL};
+    int immediate = 0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i:udev_wait",
+                                     kwlist, &immediate))
+        return NULL;
+
+    return _DmCookie_udev_wait(self, immediate);
+}
+
 #define DMCOOKIE_set_value__doc__ \
 "Set the value of this DmCookie to the given integer. The cookie is "   \
 "stored internally as a 32-bit value by the kernel and device-mapper: " \
@@ -394,17 +430,30 @@ DmCookie_udev_complete(DmCookieObject *self, PyObject *args)
 "attempting to store a larger base will raise a ValueError."
 
 #define DMCOOKIE_udev_complete__doc__ \
-"Complete the UDEV transaction for this cookie."
+"Complete the UDEV transaction for this DmCookie."
+
+#define DMCOOKIE_udev_wait__doc__ \
+"Wait until the transaction represented by this `DmCookie` is ready.\n\n"  \
+"Returns `True` if the wait is successful and the transaction is\n"        \
+"complete.\n\n"                                                            \
+"Following a successful wait the `DmCookie.ready` member is set to\n"      \
+"`True`.\n\n"                                                              \
+"On error an OSError exception is raised.\n\n"                             \
+"Unless `immediate=True` and the transaction is not ready, the cookie\n"   \
+"resources are released and no further calls to `udev_wait()`,\n"          \
+"or `udev_complete() should be made."
 
 static PyMethodDef DmCookie_methods[] = {
     {"set_value", (PyCFunction)DmCookie_set_value, METH_VARARGS,
         PyDoc_STR(DMCOOKIE_set_value__doc__)},
     {"set_prefix", (PyCFunction)DmCookie_set_prefix, METH_VARARGS,
-        PyDoc_STR(DMCOOKIE_set_value__doc__)},
+        PyDoc_STR(DMCOOKIE_set_prefix__doc__)},
     {"set_base", (PyCFunction)DmCookie_set_base, METH_VARARGS,
-        PyDoc_STR(DMCOOKIE_set_value__doc__)},
-    {"udev_complete", (PyCFunction)DmCookie_udev_complete, METH_VARARGS,
-        PyDoc_STR(DMCOOKIE_set_value__doc__)},
+        PyDoc_STR(DMCOOKIE_set_base__doc__)},
+    {"udev_complete", (PyCFunction)DmCookie_udev_complete, METH_NOARGS,
+        PyDoc_STR(DMCOOKIE_udev_complete__doc__)},
+    {"udev_wait", (PyCFunction)DmCookie_udev_wait,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMCOOKIE_udev_wait__doc__)},
     {NULL, NULL}
 };
 
@@ -2131,6 +2180,9 @@ _dmpy_udev_create_cookie(PyObject *self, PyObject *args)
     if (!cookie)
         return NULL;
 
+    if (_DmCookie_init(cookie, cookie_val))
+        return NULL;
+
     cookie->ob_cookie = cookie_val;
     _dmpy_set_cookie_values(cookie);
     return (PyObject *) cookie;
@@ -2145,6 +2197,20 @@ _dmpy_udev_complete(PyObject *self, PyObject *args)
         return NULL;
 
     return DmCookie_udev_complete(cookie, NULL);
+}
+
+static PyObject *
+_dmpy_udev_wait(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    static char * kwlist[] = {"immediate", NULL};
+    DmCookieObject *cookie;
+    int immediate = 0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|i", kwlist,
+                                     &DmCookie_Type, &cookie, &immediate))
+        return NULL;
+
+    return _DmCookie_udev_wait(cookie, immediate);
 }
 
 /* List of functions defined in the module */
@@ -2227,6 +2293,17 @@ _dmpy_udev_complete(PyObject *self, PyObject *args)
 #define DMPY_udev_complete__doc__ \
 "Complete the UDEV transaction for this cookie."
 
+#define DMPY_udev_wait__doc__ \
+"Wait until the transaction represented by `cookie` is ready.\n\n"       \
+"Returns `True` if the wait is successful and the transaction is\n"      \
+"complete.\n\n"                                                          \
+"Following a successful wait the `DmCookie.ready` member is set to\n"    \
+"`True`.\n\n"                                                            \
+"On error an OSError exception is raised.\n\n"                           \
+"Unless `immediate=True` and the transaction is not ready, the cookie\n" \
+"resources are released and no further calls to `udev_wait()`,\n"        \
+"or `udev_complete() should be made."
+
 #define DMPY___doc__ \
 ""
 
@@ -2276,7 +2353,9 @@ static PyMethodDef dmpy_methods[] = {
     {"udev_create_cookie", (PyCFunction)_dmpy_udev_create_cookie,
         METH_NOARGS, PyDoc_STR(DMPY_udev_create_cookie__doc__)},
     {"udev_complete", (PyCFunction)_dmpy_udev_complete,
-        METH_NOARGS, PyDoc_STR(DMPY_udev_complete__doc__)},
+        METH_VARARGS, PyDoc_STR(DMPY_udev_complete__doc__)},
+    {"udev_wait", (PyCFunction)_dmpy_udev_wait,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMPY_udev_wait__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
