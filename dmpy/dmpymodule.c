@@ -247,6 +247,7 @@ typedef struct {
     uint32_t ob_cookie;
     uint16_t ob_val_prefix;
     uint16_t ob_val_base;
+    PyObject *ob_ready; /* Py_True / Py_False */
 } DmCookieObject;
 
 static PyTypeObject DmCookie_Type;
@@ -272,6 +273,21 @@ _dmpy_check_cookie_value(unsigned value)
 }
 
 static int
+_DmCookie_init(DmCookieObject *self, uint32_t value)
+{
+    if (_dmpy_check_cookie_value(value))
+        return -1;
+
+    self->ob_cookie = (uint32_t) value;
+    _dmpy_set_cookie_values(self);
+
+    Py_INCREF(Py_False);
+    self->ob_ready = Py_False;
+
+    return 0;
+}
+
+static int
 DmCookie_init(DmCookieObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"value", NULL};
@@ -281,12 +297,7 @@ DmCookie_init(DmCookieObject *self, PyObject *args, PyObject *kwds)
                                      kwlist, &value))
         return -1;
 
-    if (_dmpy_check_cookie_value(value))
-        return -1;
-
-    self->ob_cookie = (uint32_t) value;
-    _dmpy_set_cookie_values(self);
-    return 0;
+    return _DmCookie_init(self, value);
 }
 
 static PyObject *
