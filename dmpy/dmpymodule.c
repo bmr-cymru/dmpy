@@ -384,6 +384,12 @@ _DmCookie_udev_wait(DmCookieObject *self, int immediate)
     PyObject *ret;
     int r, ready;
 
+    if (self->ob_ready == Py_True) {
+        PyErr_SetString(PyExc_ValueError, "Cannot udev_wait() on a "
+                        "completed DmCookie.");
+        return NULL;
+    }
+
     if (!immediate) {
         r = dm_udev_wait(self->ob_cookie);
         ready = r;
