@@ -723,15 +723,6 @@ class DmpyTests(unittest.TestCase):
         dmt.run()
         self.assertEqual(dmt.get_name(), self.dmpytest0)
 
-    def test_task_set_cookie(self):
-        # Create a DM_DEVICE_CREATE task and assert that setting a cookie
-        # returns True. FIXME: properly test udev cookie functionality.
-        import dmpy as dm
-        dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
-        cookie = dm.DmCookie()
-        dmt.set_name(self.nodev)
-        self.assertTrue(dmt.set_cookie(cookie))
-
     def test_task_set_uid(self):
         # Setting UIDs should be handled by udev rules now.
         pass
@@ -824,6 +815,48 @@ class DmpyTests(unittest.TestCase):
         # Indicating the wrong number of string arguments received by
         # drivers/md/dm-ioctl.c:dev_set_geometry().
         #dmt.run()
+
+    def test_task_create_single_linear_target_udev(self):
+        # Attempt to create a simple device with a single, linear target,
+        # and assert that the device node exists, and that the device
+        # table (as reported by dmsetup) matches the expected table.
+        import dmpy as dm
+        # Use a new device name - we will create and destroy it during
+        # the test.
+        dmpytest1 = "dmpytest1"
+        loop_minor = self.loop_minor(self.loop0[0])
+        expected_table = "0 2048 linear 7:%d 0" % loop_minor
+        dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
+        dmt.set_name(dmpytest1)
+        cookie = dm.DmCookie()
+        self.assertTrue(dmt.set_cookie(cookie))
+
+        self.assertTrue(dmt.add_target(0, self.test_dev_size_sectors,
+                                       "linear", "%s 0" % self.loop0[0]))
+        dmt.set_uuid("dmpytestlinear1")
+        dmt.run()
+
+        # Wait for udev to complete
+        self.assertTrue(cookie.udev_wait())
+
+        # Assert that the device node exists
+        self.assertTrue(exists(join(_dev_mapper, dmpytest1)))
+
+        table = _get_table_from_dmsetup(dmpytest1)
+        self.assertEqual(table, expected_table)
+
+        # Remove the device and its node
+        dmt = dm.DmTask(dm.DM_DEVICE_REMOVE)
+        dmt.set_name(dmpytest1)
+        cookie = dm.DmCookie()
+        self.assertTrue(dmt.set_cookie(cookie))
+        dmt.run()
+
+        # Wait for udev to complete
+        self.assertTrue(cookie.udev_wait())
+
+        # Assert that the device node no longer exists
+        self.assertFalse(exists(join(_dev_mapper, dmpytest1)))
 
     def test_task_create_single_linear_target_no_udev(self):
         # Attempt to create a simple device with a single, linear target,
