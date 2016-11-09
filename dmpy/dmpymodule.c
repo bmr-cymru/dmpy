@@ -384,15 +384,16 @@ _DmCookie_udev_wait(DmCookieObject *self, int immediate)
     PyObject *ret;
     int r, ready;
 
-    if (!immediate)
+    if (!immediate) {
         r = dm_udev_wait(self->ob_cookie);
-    else
+        ready = r;
+    } else
         r = dm_udev_wait_immediate(self->ob_cookie, &ready);
 
     ret = (r) ? Py_True : Py_False;
     Py_INCREF(ret);
 
-    if (r && immediate && ready) {
+    if (r && ready) {
         Py_DECREF(self->ob_ready);
         Py_INCREF(Py_True);
         self->ob_ready = Py_True;
@@ -466,6 +467,8 @@ static PyMemberDef DmCookie_members[] = {
      PyDoc_STR("The current prefix value of this `DmCookie`.")},
     {"base", T_SHORT, offsetof(DmCookieObject, ob_val_base), READONLY,
      PyDoc_STR("The current base value of this `DmCookie`.")},
+    {"ready", T_OBJECT, offsetof(DmCookieObject, ob_ready), READONLY,
+     PyDoc_STR("The current completion state of this `DmCookie`.")},
     {NULL}
 };
 
