@@ -20,6 +20,7 @@ from os import readlink, unlink, stat, major, minor
 from os.path import exists, join
 from subprocess import Popen, PIPE, STDOUT
 from random import random
+from time import sleep
 
 # Non-exported device-mapper constants: used for tests only.
 DM_NAME_LEN = 128  # includes NULL
@@ -30,6 +31,8 @@ _uuid_prefix = "DMPY-"
 _uuid_format = "%s%x"
 
 _dev_mapper = "/dev/mapper"
+
+_udev_wait_delay = 0.1
 
 
 def _new_uuid():
@@ -916,6 +919,26 @@ class DmpyTests(unittest.TestCase):
         cookie = dm.udev_create_cookie()
         self.assertFalse(cookie.ready)
         self.assertTrue(cookie.udev_wait())
+        self.assertTrue(cookie.ready)
+
+    def test_cookie_wait_immediate(self):
+        # Create a new cookie, wait on it, and assert that it becomes ready.
+        import dmpy as dm
+        _remove_dm_device(self.dmpytest0)
+        dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
+        dmt.set_name(self.dmpytest0)
+        cookie = dm.udev_create_cookie()
+        self.assertFalse(cookie.ready)
+        dmt.set_cookie(cookie)
+        dmt.add_target(0, self.test_dev_size_sectors,
+                       "linear", "%s 0" % self.loop0[0])
+        dmt.run()
+
+        cookie.udev_wait(immediate=True)
+        while not cookie.ready:
+            cookie.udev_wait(immediate=True)
+            sleep(_udev_wait_delay)
+
         self.assertTrue(cookie.ready)
 
 
