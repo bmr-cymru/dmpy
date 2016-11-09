@@ -384,7 +384,6 @@ class DmpyTests(unittest.TestCase):
         else:
             self.assertFalse(dm.cookie_supported())
 
-
     def test_udev_create_cookie(self):
         # Assert that a new cookie, with non-zero value is created following a
         # call to dmpy.udev_create_cookie().
@@ -392,6 +391,7 @@ class DmpyTests(unittest.TestCase):
         cookie = dm.udev_create_cookie()
         self.assertTrue(cookie)
         self.assertTrue(cookie.value)
+        self.assertTrue(cookie.udev_wait())
 
     #
     # DmTask tests.
@@ -835,6 +835,7 @@ class DmpyTests(unittest.TestCase):
         dmpytest1 = "dmpytest1"
         loop_minor = self.loop_minor(self.loop0[0])
         expected_table = "0 2048 linear 7:%d 0" % loop_minor
+        dm.udev_set_sync_support(0)
         dmt = dm.DmTask(dm.DM_DEVICE_CREATE)
         dmt.set_name(dmpytest1)
         self.assertTrue(dmt.add_target(0, self.test_dev_size_sectors,
@@ -861,5 +862,6 @@ class DmpyTests(unittest.TestCase):
 
         # Assert that the device node no longer exists
         self.assertFalse(exists(join(_dev_mapper, dmpytest1)))
+        dm.udev_set_sync_support(1)
 
 # vim: set et ts=4 sw=4 :
