@@ -909,5 +909,14 @@ class DmpyTests(unittest.TestCase):
         self.assertFalse(cookie.ready)
         cookie.udev_wait()
 
+    def test_cookie_ready_after_wait(self):
+        # Create a new cookie, wait on it, and assert that it becomes
+        # ready following the call to cookie.udev_wait().
+        import dmpy as dm
+        cookie = dm.udev_create_cookie()
+        self.assertFalse(cookie.ready)
+        self.assertTrue(cookie.udev_wait())
+        self.assertTrue(cookie.ready)
+
 
 # vim: set et ts=4 sw=4 :
