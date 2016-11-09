@@ -833,7 +833,7 @@ class DmpyTests(unittest.TestCase):
 
         self.assertTrue(dmt.add_target(0, self.test_dev_size_sectors,
                                        "linear", "%s 0" % self.loop0[0]))
-        dmt.set_uuid("dmpytestlinear1")
+        dmt.set_uuid(_new_uuid())
         dmt.run()
 
         # Wait for udev to complete
@@ -873,7 +873,7 @@ class DmpyTests(unittest.TestCase):
         dmt.set_name(dmpytest1)
         self.assertTrue(dmt.add_target(0, self.test_dev_size_sectors,
                                        "linear", "%s 0" % self.loop0[0]))
-        dmt.set_uuid("dmpytestlinear1")
+        dmt.set_uuid(_new_uuid())
         dmt.run()
 
         # update device nodes
