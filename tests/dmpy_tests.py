@@ -897,4 +897,17 @@ class DmpyTests(unittest.TestCase):
         self.assertFalse(exists(join(_dev_mapper, dmpytest1)))
         dm.udev_set_sync_support(1)
 
+    #
+    # Cookie tests
+    #
+
+    def test_new_cookie_not_ready(self):
+        # Create a new cookie, assert that it is not ready, and then
+        # destroy it.
+        import dmpy as dm
+        cookie = dm.udev_create_cookie()
+        self.assertFalse(cookie.ready)
+        cookie.udev_wait()
+
+
 # vim: set et ts=4 sw=4 :
