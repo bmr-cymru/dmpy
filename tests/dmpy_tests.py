@@ -952,6 +952,47 @@ class DmpyTests(unittest.TestCase):
 
         self.assertTrue(cookie.ready)
 
+    #
+    # DmStats tests
+    #
 
+    def test_stats_create_program_id(self):
+        # Assert that creating a DmStats handle with program_id=None
+        # returns a valid object.
+        import dmpy as dm
+        dms = dm.DmStats("dmpytest")
+        self.assertTrue(dms)
+        self.assertEqual(type(dms), dm.DmStats)
+
+    def test_stats_create_no_program_id(self):
+        # Assert that creating a DmStats handle with program_id=None
+        # returns a valid object.
+        import dmpy as dm
+        dms = dm.DmStats(None)
+        self.assertTrue(dms)
+        self.assertEqual(type(dms), dm.DmStats)
+
+    def test_stats_create_bind_name(self):
+        # Assert that creating a DmStats handle and binding it to a name via
+        # the name= keword argument returns a valid object.
+        import dmpy as dm
+        dms = dm.DmStats("dmpytest", name=self.dmpytest0)
+        self.assertTrue(dms)
+        self.assertEqual(type(dms), dm.DmStats)
+
+    def test_stats_create_no_program_id_bind_name(self):
+        # Assert that creating a DmStats handle with program_id=None
+        # and a name= keyword argument returns a valid object.
+        import dmpy as dm
+        dms = dm.DmStats(None, name=self.dmpytest0)
+        self.assertTrue(dms)
+        self.assertEqual(type(dms), dm.DmStats)
+
+    def test_stats_create_multiple_bind_raises(self):
+        # Assert that attempting to pass multiple device binding kwargs
+        # raises a TypeError exception.
+        import dmpy as dm
+        with self.assertRaises(TypeError) as cm:
+            dm.DmStats("dmpytest", name="foo", uuid="qux")
 
 # vim: set et ts=4 sw=4 :
