@@ -272,6 +272,14 @@ _dmpy_check_cookie_value(unsigned value)
     return 0;
 }
 
+static void
+DmCookie_dealloc(DmCookieObject *self)
+{
+    /* ob_ready may be NULL if __init__ failed, or was never called. */
+    Py_XDECREF(self->ob_ready);
+    PyObject_Del(self);
+}
+
 static int
 _DmCookie_init(DmCookieObject *self, uint32_t value)
 {
@@ -486,7 +494,7 @@ static PyTypeObject DmCookie_Type = {
     sizeof(DmCookieObject),          /*tp_basicsize*/
     0,                          /*tp_itemsize*/
     /* methods */
-    0,                          /*tp_dealloc*/
+    (destructor)DmCookie_dealloc, /*tp_dealloc*/
     0,                          /*tp_print*/
     0,                          /*tp_getattr*/
     0,                          /*tp_setattr*/
