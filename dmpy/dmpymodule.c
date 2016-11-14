@@ -46,6 +46,10 @@
     #define dmpy_debug(x...)
 #endif
 
+#define NSEC_PER_USEC   1000L
+#define NSEC_PER_MSEC   1000000L
+#define NSEC_PER_SEC    1000000000L
+
 PyDoc_STRVAR(dmpy__doc__,
 "dmpy is a set of Python bindings for the device-mapper library.\n");
 
@@ -2101,6 +2105,32 @@ PyObject *DmStats_group_present(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("i", val);
 }
 
+PyObject *DmStats_set_sampling_interval(DmStatsObject *self, PyObject *args)
+{
+    uint64_t interval_ns;
+    double interval;
+
+    if (!PyArg_ParseTuple(args, "d:set_sampling_interval", &interval))
+        return NULL;
+
+    interval_ns = (uint64_t)(interval * (double) NSEC_PER_SEC);
+    dm_stats_set_sampling_interval_ns(self->ob_dms, interval_ns);
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+PyObject *DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
+{
+    uint64_t interval_ns;
+    double interval;
+
+    interval_ns = dm_stats_get_sampling_interval_ns(self->ob_dms);
+    interval = ((double) interval_ns / (double) NSEC_PER_SEC);
+
+    return Py_BuildValue("d", interval);
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2134,6 +2164,21 @@ PyObject *DmStats_group_present(DmStatsObject *self, PyObject *args)
 #define DMSTATS_group_present__doc__ \
 "Test whether group_id is present in this DmStats object."
 
+#define DMSTATS_set_sampling_interval__doc__ \
+"Set the sampling interval for counter data to the specified value in\n" \
+"seconds. Floating point values are permitted.\n\n"                      \
+"The interval is used to calculate time-based metrics from the basic\n"  \
+"counter data: an interval must be set before calling any of the\n"      \
+"metric methods.\n\n"                                                    \
+"For best accuracy the duration should be measured and updated at the\n" \
+"end of each interval.\n\n"                                              \
+"All values are stored internally with nanosecond precision and are\n"   \
+"converted to or from seconds as needed."
+
+#define DMSTATS_get_sampling_interval__doc__ \
+"Return the currently configured sampling interval in seconds, as a\n"   \
+"Floating point value."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2156,6 +2201,10 @@ static PyMethodDef DmStats_methods[] = {
         PyDoc_STR(DMSTATS_region_nr_areas__doc__)},
     {"group_present", (PyCFunction)DmStats_group_present, METH_VARARGS,
         PyDoc_STR(DMSTATS_group_present__doc__)},
+    {"set_sampling_interval", (PyCFunction)DmStats_set_sampling_interval,
+        METH_VARARGS, PyDoc_STR(DMSTATS_set_sampling_interval__doc__)},
+    {"get_sampling_interval", (PyCFunction)DmStats_get_sampling_interval,
+        METH_VARARGS, PyDoc_STR(DMSTATS_get_sampling_interval__doc__)},
     {NULL, NULL}
 };
 
