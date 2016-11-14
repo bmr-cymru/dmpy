@@ -547,7 +547,7 @@ static PyTypeObject DmInfo_Type;
 #define DmInfoObject_Check(v)      (Py_TYPE(v) == &DmInfo_Type)
 
 static DmInfoObject *
-newDmInfoObject(PyObject *arg)
+newDmInfoObject(void)
 {
     return PyObject_New(DmInfoObject, &DmInfo_Type);
 }
@@ -871,7 +871,7 @@ DmTask_get_info(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, DMT_HAVE_INFO, "get_info"))
         return NULL;
 
-    info = newDmInfoObject(Py_None);
+    info = newDmInfoObject();
     if (!info)
         return NULL;
 
