@@ -2043,6 +2043,16 @@ PyObject *DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
     return Py_True;
 }
 
+/*
+ * DmStats property methods
+ * FIXME: expose these via the object's __dict__
+ */
+
+PyObject *DmStats_nr_regions(DmStatsObject *self, PyObject *args)
+{
+    return Py_BuildValue("i", dm_stats_get_nr_regions(self->ob_dms));
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2058,6 +2068,9 @@ PyObject *DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
 "binding is cleared and any preexisting counter data contained in\n" \
 "the object is released."
 
+#define DMSTATS_nr_regions__doc__ \
+"Return the number of regions present in this DmStats object."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2068,6 +2081,8 @@ static PyMethodDef DmStats_methods[] = {
         PyDoc_STR(DMSTATS_bind_name__doc__)},
     {"bind_uuid", (PyCFunction)DmStats_bind_uuid, METH_VARARGS,
         PyDoc_STR(DMSTATS_bind_uuid__doc__)},
+    {"nr_regions", (PyCFunction)DmStats_nr_regions, METH_NOARGS,
+        PyDoc_STR(DMSTATS_nr_regions__doc__)},
     {NULL, NULL}
 };
 
