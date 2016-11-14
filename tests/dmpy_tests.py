@@ -1119,4 +1119,12 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dms)
         self.assertFalse(dms.region_nr_areas(0))
 
+    def test_stats_new_handle_no_group_present(self):
+        # Assert that groups are not present in a newly created DmStats object.
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
+        self.assertFalse(dms.group_present(0))
+        self.assertFalse(dms.group_present(1))
+        self.assertFalse(dms.group_present(-1))
+
 # vim: set et ts=4 sw=4 :
