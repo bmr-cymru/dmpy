@@ -996,4 +996,51 @@ class DmpyTests(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             dm.DmStats(self.program_id, name="foo", uuid="qux")
 
+    def test_stats_bind_name_none(self):
+        # Assert that attempting to bind a NULL name raises TypeError.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        with self.assertRaises(TypeError) as cm:
+            dms.bind_name(None)
+
+    def test_stats_bind_name_empty(self):
+        # Assert that attempting to bind an empty name raises ValueError.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        with self.assertRaises(ValueError) as cm:
+            dms.bind_name("")
+
+    def test_stats_bind_name_valid(self):
+        # Assert that attempting to bind a valid name succeeds.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        self.assertTrue(dms.bind_name(self.dmpytest0))
+
+    def test_stats_bind_uuid_none(self):
+        # Assert that attempting to bind a NULL uuid raises TypeError.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        with self.assertRaises(TypeError) as cm:
+            dms.bind_uuid(None)
+
+    def test_stats_bind_uuid_empty(self):
+        # Assert that attempting to bind an empty uuid raises ValueError.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        with self.assertRaises(ValueError) as cm:
+            dms.bind_uuid("")
+
+    def test_stats_bind_uuid_valid(self):
+        # Assert that attempting to bind a valid uuid succeeds.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        self.assertTrue(dms.bind_uuid(_new_uuid()))
+
+    def test_stats_bind_devno_valid(self):
+        # Assert that attempting to bind a valid devno succeeds.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        # FIXME: generate a valid DM major/minor pair.
+        self.assertTrue(dms.bind_devno(253, 0))
+
 # vim: set et ts=4 sw=4 :
