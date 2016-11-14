@@ -283,7 +283,7 @@ DmCookie_dealloc(DmCookieObject *self)
 static int
 _DmCookie_init(DmCookieObject *self, uint32_t value)
 {
-    if (_dmpy_check_cookie_value(value))
+    if (_dmpy_check_cookie_value((unsigned) value))
         return -1;
 
     self->ob_cookie = (uint32_t) value;
@@ -1890,6 +1890,188 @@ static PyTypeObject DmTask_Type = {
 };
 
 
+/*
+ * DmStats objects.
+ */
+
+typedef struct {
+    PyObject_HEAD
+    struct dm_stats *ob_dms;
+} DmStatsObject;
+
+static PyTypeObject DmStats_Type;
+
+#define DmStatsObject_Check(v)      (Py_TYPE(v) == &DmStats_Type)
+
+static void
+DmStats_dealloc(DmStatsObject *self)
+{
+    if (self->ob_dms)
+        dm_stats_destroy(self->ob_dms);
+    self->ob_dms = NULL;
+    PyObject_Del(self);
+}
+
+#define DMSTATS__init__KWARG_ERR "Please specify one of name=, uuid=, or " \
+"major= and minor= keyword arguments."
+static int
+DmStats_init(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"program_id",
+                             "name", "uuid", "major", "minor", NULL};
+    const char *program_id = NULL, *name = NULL, *uuid = NULL;
+    int major = 0, minor = 0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "z|ssii:__init__", kwlist,
+                                     &program_id, &name, &uuid, &major, &minor))
+        return -1;
+
+    if (name) {
+        if (uuid || major || minor) {
+            PyErr_SetString(PyExc_TypeError, DMSTATS__init__KWARG_ERR);
+            return -1;
+        }
+    }
+
+    if (uuid) {
+        if (major || minor) {
+            PyErr_SetString(PyExc_TypeError, DMSTATS__init__KWARG_ERR);
+            return -1;
+        }
+    }
+
+    self->ob_dms = dm_stats_create(program_id);
+
+    if (!self->ob_dms) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to allocated "
+                        "DmStats handle.");
+        return -1;
+    }
+
+    if (name) {
+        if (!dm_stats_bind_name(self->ob_dms, name)) {
+            PyErr_SetString(PyExc_OSError, "Failed to bind name to "
+                            "DmStatst handle.");
+            goto fail;
+        }
+    } else if (uuid) {
+        if (!dm_stats_bind_uuid(self->ob_dms, uuid)) {
+            PyErr_SetString(PyExc_OSError, "Failed to bind uuid to "
+                            "DmStatst handle.");
+            goto fail;
+        }
+    } else if (major) {
+        if (!minor) {
+            PyErr_SetString(PyExc_ValueError,"Missing minor= keyword "
+                                             "argument.");
+            goto fail;
+        }
+        if (!dm_stats_bind_devno(self->ob_dms, major, minor)) {
+            PyErr_SetString(PyExc_OSError, "Failed to bind devno to "
+                            "DmStatst handle.");
+            goto fail;
+        }
+    } else if (minor) {
+            PyErr_SetString(PyExc_ValueError,"Missing major= keyword "
+                                             "argument.");
+            goto fail;
+    }
+
+    return 0;
+fail:
+    dm_stats_destroy(self->ob_dms);
+    return -1;
+}
+
+#define DMSTATS___doc__ \
+""
+
+static PyMethodDef DmStats_methods[] = {
+    {NULL, NULL}
+};
+
+#define DMSTATS__doc__ \
+"Base class representing a device-mapper statistics handle.\n\n"            \
+"Operations on dm_stats objects include managing statistics regions\n"      \
+"and obtaining and manipulating current counter values from the\n"          \
+"kernel. Methods are provided to return baisc count values and to\n"        \
+"derive time-based metrics when a suitable interval estimate is\n"          \
+"provided.\n\n"                                                             \
+                                                                            \
+"Internally the dm_stats handle contains a pointer to a table of one\n"     \
+"or more dm_stats_region objects representing the regions registered\n"     \
+"with the dm_stats_create_region() method. These in turn point to a\n"      \
+"table of one or more dm_stats_counters objects containing the\n"           \
+"counter sets for each defined area within the region:\n\n"                 \
+                                                                            \
+"dm_stats->dm_stats_region[nr_regions]->dm_stats_counters[nr_areas]\n\n"    \
+                                                                            \
+"This structure is private to the library and may change in future\n"       \
+"versions: all users should make use of the public interface and treat\n"   \
+"the dm_stats type as an opaque handle.\n\n"                                \
+                                                                            \
+"Regions and counter sets are stored in order of increasing region_id.\n"   \
+"Depending on region specifications and the sequence of create and\n"       \
+"delete operations this may not correspond to increasing sector\n"          \
+"number: users of the library should not assume that this is the case\n"    \
+"unless region creation is deliberately managed to ensure this (by\n"       \
+"always creating regions in strict order of ascending sector address).\n\n" \
+                                                                            \
+"Regions may also overlap so the same sector range may be included in\n"    \
+"more than one region or area: applications should be prepared to deal\n"   \
+"with this or manage regions such that it does not occur."
+
+static PyTypeObject DmStats_Type = {
+    /* The ob_type field must be initialized in the module init function
+     * to be portable to Windows without using C++. */
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "dmpy.DmStats",             /*tp_name*/
+    sizeof(DmStatsObject),      /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    /* methods */
+    (destructor)DmStats_dealloc, /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_reserved*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    DMSTATS__doc__,             /*tp_doc*/
+    0,                          /*tp_traverse*/
+    0,                          /*tp_clear*/
+    0,                          /*tp_richcompare*/
+    0,                          /*tp_weaklistoffset*/
+    0,                          /*tp_iter*/
+    0,                          /*tp_iternext*/
+    DmStats_methods,            /*tp_methods*/
+    0,                          /*tp_members*/
+    0,                          /*tp_getset*/
+    0,                          /*tp_base*/
+    0,                          /*tp_dict*/
+    0,                          /*tp_descr_get*/
+    0,                          /*tp_descr_set*/
+    0,                          /*tp_dictoffset*/
+    (initproc)DmStats_init,     /*tp_init*/
+    0,                          /*tp_alloc*/
+    0,                          /*tp_new*/
+    0,                          /*tp_free*/
+    0,                          /*tp_is_gc*/
+};
+
+
+/*
+ * dmpy module methods.
+ */
+
 static PyObject *
 _dmpy_get_lib_version(PyObject *self, PyObject *args)
 {
@@ -2578,6 +2760,9 @@ dmpy_exec(PyObject *m)
     DmTask_Type.tp_base = &PyBaseObject_Type;
     DmTask_Type.tp_new = PyType_GenericNew;
 
+    DmStats_Type.tp_base = &PyBaseObject_Type;
+    DmStats_Type.tp_new = PyType_GenericNew;
+
     if (PyType_Ready(&DmTimestamp_Type) < 0)
         goto fail;
 
@@ -2590,6 +2775,10 @@ dmpy_exec(PyObject *m)
     if (PyType_Ready(&DmTask_Type) < 0)
         goto fail;
 
+    if (PyType_Ready(&DmStats_Type) < 0)
+        goto fail;
+
+    PyModule_AddObject(m, "DmStats", (PyObject *) &DmStats_Type);
     PyModule_AddObject(m, "DmTask", (PyObject *) &DmTask_Type);
     PyModule_AddObject(m, "DmCookie", (PyObject *) &DmCookie_Type);
     PyModule_AddObject(m, "DmTimestamp", (PyObject *) &DmTimestamp_Type);
