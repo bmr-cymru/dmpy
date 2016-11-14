@@ -2932,7 +2932,8 @@ static const char *_dmpy_udev_flag_names[] = {
  */
 static int _dmpy_add_stats_constants(PyObject *m)
 {
-    PyModule_AddObject(m, "STATS_ALL_PROGRAMS", Py_BuildValue("s", ""));
+    PyModule_AddObject(m, "STATS_ALL_PROGRAMS",
+                       Py_BuildValue("s", DM_STATS_ALL_PROGRAMS));
     return 0;
 }
 
