@@ -407,6 +407,18 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         self.assertTrue(dm.message_supports_precise_timestamps())
 
+    def test_stats_driver_supports_precise(self):
+        # Assert that dm.stats_driver_supports_precise() returns True.
+        # FIXME: see test_message_supports_precise_timestamps.
+        import dmpy as dm
+        self.assertTrue(dm.stats_driver_supports_precise())
+
+    def test_stats_driver_supports_histogram(self):
+        # Assert that dm.stats_driver_supports_histogram() returns True.
+        # FIXME: see test_message_supports_precise_timestamps.
+        import dmpy as dm
+        self.assertTrue(dm.stats_driver_supports_histogram())
+
     #
     # DmTask tests.
     #
