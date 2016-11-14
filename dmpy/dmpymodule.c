@@ -2750,6 +2750,15 @@ static const char *_dmpy_udev_flag_names[] = {
 };
 
 /*
+ * Add module variables for DM_STATS_* constants.
+ */
+static int _dmpy_add_stats_constants(PyObject *m)
+{
+    PyModule_AddObject(m, "STATS_ALL_PROGRAMS", Py_BuildValue("s", ""));
+    return 0;
+}
+
+/*
  * Add module variables for DM_UDEV_* and DM_SUBSYSTEM_UDEV_* flags.
  */
 static int _dmpy_add_udev_flags(PyObject *m)
@@ -2956,6 +2965,9 @@ dmpy_exec(PyObject *m)
         goto fail;
 
     if (_dmpy_add_udev_flags(m))
+        goto fail;
+
+    if (_dmpy_add_stats_constants(m))
         goto fail;
 
     return 0;
