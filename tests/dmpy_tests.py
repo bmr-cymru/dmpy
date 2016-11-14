@@ -419,6 +419,13 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         self.assertTrue(dm.stats_driver_supports_histogram())
 
+    def test_stats_all_programs(self):
+        # Assert that the dmpy.STATS_ALL_PROGRAMS constant exists and has
+        # the expected value.
+        import dmpy as dm
+        self.assertFalse(dm.STATS_ALL_PROGRAMS)
+        self.assertEqual(dm.STATS_ALL_PROGRAMS, "")
+
     #
     # DmTask tests.
     #
@@ -984,6 +991,14 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(self.program_id)
+        self.assertTrue(dms)
+        self.assertEqual(type(dms), dm.DmStats)
+
+    def test_stats_create_all_programs(self):
+        # Assert that creating a DmStats handle with dm.STATS_ALL_PROGRAMS
+        # returns a valid object.
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
         self.assertTrue(dms)
         self.assertEqual(type(dms), dm.DmStats)
 
