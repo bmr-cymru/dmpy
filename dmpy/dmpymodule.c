@@ -2493,6 +2493,21 @@ _dmpy_udev_wait(PyObject *self, PyObject *args, PyObject *kwds)
     return _DmCookie_udev_wait(cookie, immediate);
 }
 
+static PyObject *
+_dmpy_message_supports_precise_timestamps(PyObject *self, PyObject *args)
+{
+    int precise = dm_message_supports_precise_timestamps();
+    PyObject *ret;
+
+    if (precise)
+        ret = Py_True;
+    else
+        ret = Py_False;
+
+    Py_INCREF(ret);
+    return ret;
+}
+
 /* List of functions defined in the module */
 
 #define DMPY_get_library_version__doc__ "Get the version of the device-mapper" \
@@ -2584,6 +2599,11 @@ _dmpy_udev_wait(PyObject *self, PyObject *args, PyObject *kwds)
 "resources are released and no further calls to `udev_wait()`,\n"        \
 "or `udev_complete() should be made."
 
+#define DMPY_message_supports_precise_timestamps__doc__ \
+"Test for the presence of precise_timestamps and histogram support.\n"   \
+"Returns True if the running kernel supports the feature, or False\n"    \
+"otherwise."
+
 #define DMPY___doc__ \
 ""
 
@@ -2636,6 +2656,10 @@ static PyMethodDef dmpy_methods[] = {
         METH_VARARGS, PyDoc_STR(DMPY_udev_complete__doc__)},
     {"udev_wait", (PyCFunction)_dmpy_udev_wait,
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMPY_udev_wait__doc__)},
+    {"message_supports_precise_timestamps",
+        (PyCFunction)_dmpy_message_supports_precise_timestamps,
+        METH_NOARGS,
+        PyDoc_STR(DMPY_message_supports_precise_timestamps__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
