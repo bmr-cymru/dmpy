@@ -1087,4 +1087,13 @@ class DmpyTests(unittest.TestCase):
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
         self.assertTrue(dms)
         self.assertFalse(dms.nr_regions())
+
+    def test_stats_new_has_no_groups(self):
+        # Assert that a newly created / bound stats handle returns zero
+        # regions.
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
+        self.assertTrue(dms)
+        self.assertFalse(dms.nr_groups())
+
 # vim: set et ts=4 sw=4 :
