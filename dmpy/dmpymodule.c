@@ -2131,6 +2131,29 @@ PyObject *DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("d", interval);
 }
 
+PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"program_id", "allow_empty", NULL};
+    int allow_empty = 0;
+    char *program_id;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "z|i:set_program_id", kwlist,
+                                     &program_id, &allow_empty))
+        return NULL;
+
+    if (!allow_empty && (!program_id || !strlen(program_id))) {
+        PyErr_SetString(PyExc_ValueError, "Empty program_id not permitted "
+                        "without allow_empty=True.");
+        return NULL;
+    }
+    if (!dm_stats_set_program_id(self->ob_dms, allow_empty, program_id)) {
+        PyErr_SetString(PyExc_OSError, "Failed to set program_id.");
+        return NULL;
+    }
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2179,6 +2202,22 @@ PyObject *DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
 "Return the currently configured sampling interval in seconds, as a\n"   \
 "Floating point value."
 
+#define DMSTATS_set_program_id__doc__ \
+"Override program_id. This may be used to change the default\n"          \
+"program_id value for an existing handle. If the allow_empty argument\n" \
+"is non-zero a program_id of None or the empty string is permitted.\n\n" \
+"Use with caution! Most users of the library should set a valid,\n"      \
+"non-NULL program_id for every statistics region created. Failing to\n"  \
+"do so may result in confusing state when multiple programs are\n"       \
+"creating and managing statistics regions.\n\n"                          \
+"All users of the library are encouraged to choose an unambiguous,\n"    \
+"unique program_id: this could be based on PID (for programs that\n"     \
+"create, report, and delete regions in a single process), session id,\n" \
+"executable name, or some other distinguishing string.\n\n"              \
+"Use of the empty string as a program_id does not simplify use of the\n" \
+"library or the command line tools and use of this value is strongly\n"  \
+"discouraged."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2205,6 +2244,8 @@ static PyMethodDef DmStats_methods[] = {
         METH_VARARGS, PyDoc_STR(DMSTATS_set_sampling_interval__doc__)},
     {"get_sampling_interval", (PyCFunction)DmStats_get_sampling_interval,
         METH_VARARGS, PyDoc_STR(DMSTATS_get_sampling_interval__doc__)},
+    {"set_program_id", (PyCFunction)DmStats_set_program_id,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_set_program_id__doc__)},
     {NULL, NULL}
 };
 
