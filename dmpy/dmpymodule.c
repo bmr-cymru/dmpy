@@ -2090,6 +2090,17 @@ PyObject *DmStats_nr_areas(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("i", dm_stats_get_nr_areas(self->ob_dms));
 }
 
+PyObject *DmStats_group_present(DmStatsObject *self, PyObject *args)
+{
+    int group_id, val;
+
+    if (!PyArg_ParseTuple(args, "i:group_present", &group_id))
+        return NULL;
+
+    val = dm_stats_group_present(self->ob_dms, group_id);
+    return Py_BuildValue("i", val);
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2120,6 +2131,9 @@ PyObject *DmStats_nr_areas(DmStatsObject *self, PyObject *args)
 #define DMSTATS_nr_areas__doc__ \
 "Return the number of areas present in this DmStats object."
 
+#define DMSTATS_group_present__doc__ \
+"Test whether group_id is present in this DmStats object."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2140,6 +2154,8 @@ static PyMethodDef DmStats_methods[] = {
         PyDoc_STR(DMSTATS_region_present__doc__)},
     {"region_nr_areas", (PyCFunction)DmStats_region_nr_areas, METH_VARARGS,
         PyDoc_STR(DMSTATS_region_nr_areas__doc__)},
+    {"group_present", (PyCFunction)DmStats_group_present, METH_VARARGS,
+        PyDoc_STR(DMSTATS_group_present__doc__)},
     {NULL, NULL}
 };
 
