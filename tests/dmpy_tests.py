@@ -1104,4 +1104,11 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dms)
         self.assertFalse(dms.nr_areas())
 
+    def test_stats_not_present_region_is_not_present(self):
+        # Assert that a non-existent region_id returns False when passed
+        # to DmStats.region_present().
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
+        self.assertFalse(dms.region_present(-1))
+
 # vim: set et ts=4 sw=4 :
