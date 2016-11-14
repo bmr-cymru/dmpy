@@ -2508,6 +2508,36 @@ _dmpy_message_supports_precise_timestamps(PyObject *self, PyObject *args)
     return ret;
 }
 
+static PyObject *
+_dmpy_stats_driver_supports_precise(PyObject *self, PyObject *args)
+{
+    int precise = dm_stats_driver_supports_precise();
+    PyObject *ret;
+
+    if (precise)
+        ret = Py_True;
+    else
+        ret = Py_False;
+
+    Py_INCREF(ret);
+    return ret;
+}
+
+static PyObject *
+_dmpy_stats_driver_supports_histogram(PyObject *self, PyObject *args)
+{
+    int histogram = dm_stats_driver_supports_histogram();
+    PyObject *ret;
+
+    if (histogram)
+        ret = Py_True;
+    else
+        ret = Py_False;
+
+    Py_INCREF(ret);
+    return ret;
+}
+
 /* List of functions defined in the module */
 
 #define DMPY_get_library_version__doc__ "Get the version of the device-mapper" \
@@ -2604,6 +2634,16 @@ _dmpy_message_supports_precise_timestamps(PyObject *self, PyObject *args)
 "Returns True if the running kernel supports the feature, or False\n"    \
 "otherwise."
 
+#define DMPY_stats_driver_supports_precise__doc__ \
+"Test for the presence of precise_timestamps support.\n"                 \
+"Returns True if the running kernel supports the feature, or False\n"    \
+"otherwise."
+
+#define DMPY_stats_driver_supports_histogram__doc__ \
+"Test for the presence of histogram support.\n"                          \
+"Returns True if the running kernel supports the feature, or False\n"    \
+"otherwise."
+
 #define DMPY___doc__ \
 ""
 
@@ -2660,6 +2700,12 @@ static PyMethodDef dmpy_methods[] = {
         (PyCFunction)_dmpy_message_supports_precise_timestamps,
         METH_NOARGS,
         PyDoc_STR(DMPY_message_supports_precise_timestamps__doc__)},
+    {"stats_driver_supports_precise",
+        (PyCFunction)_dmpy_stats_driver_supports_precise,
+        METH_NOARGS, PyDoc_STR(DMPY_stats_driver_supports_precise__doc__)},
+    {"stats_driver_supports_histogram",
+        (PyCFunction)_dmpy_stats_driver_supports_histogram,
+        METH_NOARGS, PyDoc_STR(DMPY_stats_driver_supports_histogram__doc__)},
     {NULL, NULL}           /* sentinel */
 };
 
