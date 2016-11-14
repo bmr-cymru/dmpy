@@ -166,6 +166,7 @@ class DmpyTests(unittest.TestCase):
     nodev = "quxquxquxquxqux"
     loop0 = None
     dmpytest0 = None
+    program_id = "dmpytest"
 
     def udev_settle(self):
         _get_cmd_output("udevadm settle")
@@ -960,7 +961,7 @@ class DmpyTests(unittest.TestCase):
         # Assert that creating a DmStats handle with program_id=None
         # returns a valid object.
         import dmpy as dm
-        dms = dm.DmStats("dmpytest")
+        dms = dm.DmStats(self.program_id)
         self.assertTrue(dms)
         self.assertEqual(type(dms), dm.DmStats)
 
@@ -976,7 +977,7 @@ class DmpyTests(unittest.TestCase):
         # Assert that creating a DmStats handle and binding it to a name via
         # the name= keword argument returns a valid object.
         import dmpy as dm
-        dms = dm.DmStats("dmpytest", name=self.dmpytest0)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
         self.assertTrue(dms)
         self.assertEqual(type(dms), dm.DmStats)
 
@@ -993,6 +994,6 @@ class DmpyTests(unittest.TestCase):
         # raises a TypeError exception.
         import dmpy as dm
         with self.assertRaises(TypeError) as cm:
-            dm.DmStats("dmpytest", name="foo", uuid="qux")
+            dm.DmStats(self.program_id, name="foo", uuid="qux")
 
 # vim: set et ts=4 sw=4 :
