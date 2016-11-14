@@ -1135,4 +1135,28 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dms.set_sampling_interval(0.5))
         self.assertEqual(dms.get_sampling_interval(), 0.5)
 
+    def test_stats_set_none_program_id_no_allow_empty_raises(self):
+        # Assert that attempting to set None as the program_id fails if the
+        # allow_empty flag is not given.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        with self.assertRaises(ValueError) as cm:
+            dms.set_program_id(None)
+        with self.assertRaises(ValueError) as cm:
+            dms.set_program_id("")
+
+    def test_stats_set_none_program_id_with_allow_empty(self):
+        # Assert that attempting to set None as the program_id fails if the
+        # allow_empty flag is not given.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        dms.set_program_id(None, allow_empty=True)
+        dms.set_program_id("", allow_empty=True)
+
+    def test_stats_set_program_id(self):
+        # Assert that setting a valid program_id succeeds.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id)
+        self.assertTrue(dms.set_program_id("qux"))
+
 # vim: set et ts=4 sw=4 :
