@@ -397,6 +397,16 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(cookie.value)
         self.assertTrue(cookie.udev_wait())
 
+    def test_message_supports_precise_timestamps(self):
+        # Assert that dm.message_supports_precise_timestamps() returns True.
+        # FIXME: a better test would be to check the driver version from
+        # dmsetup and assertTrue/assertFalse as appropriate. Today though,
+        # it's unlikely that anyone running the suite is using a kernel old
+        # enough to fail the test. Users of RHEL5, or older builds of RHEL6
+        # and RHEL7 will fail this test.
+        import dmpy as dm
+        self.assertTrue(dm.message_supports_precise_timestamps())
+
     #
     # DmTask tests.
     #
