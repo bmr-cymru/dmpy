@@ -1111,4 +1111,12 @@ class DmpyTests(unittest.TestCase):
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
         self.assertFalse(dms.region_present(-1))
 
+    def test_stats_new_handle_region_has_no_areas(self):
+        # Assert that a newly created / bound stats handle returns zero
+        # areas.
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
+        self.assertTrue(dms)
+        self.assertFalse(dms.region_nr_areas(0))
+
 # vim: set et ts=4 sw=4 :
