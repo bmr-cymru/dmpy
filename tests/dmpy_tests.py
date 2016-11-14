@@ -1127,4 +1127,12 @@ class DmpyTests(unittest.TestCase):
         self.assertFalse(dms.group_present(1))
         self.assertFalse(dms.group_present(-1))
 
+    def test_stats_set_get_sampling_interval(self):
+        # Assert that setting a sampling interval is raises no error, and that
+        # the set value is returned by a subsequent get.
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
+        self.assertTrue(dms.set_sampling_interval(0.5))
+        self.assertEqual(dms.get_sampling_interval(), 0.5)
+
 # vim: set et ts=4 sw=4 :
