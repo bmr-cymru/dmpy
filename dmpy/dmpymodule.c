@@ -2058,6 +2058,17 @@ PyObject *DmStats_nr_groups(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("i", dm_stats_get_nr_groups(self->ob_dms));
 }
 
+PyObject *DmStats_region_present(DmStatsObject *self, PyObject *args)
+{
+    int region_id;
+
+    if (!PyArg_ParseTuple(args, "i:region_present", &region_id))
+        return NULL;
+
+    return Py_BuildValue("i", dm_stats_region_present(self->ob_dms,
+                                                      region_id));
+}
+
 PyObject *DmStats_nr_areas(DmStatsObject *self, PyObject *args)
 {
     return Py_BuildValue("i", dm_stats_get_nr_areas(self->ob_dms));
@@ -2084,6 +2095,9 @@ PyObject *DmStats_nr_areas(DmStatsObject *self, PyObject *args)
 #define DMSTATS_nr_groups__doc__ \
 "Return the number of groups present in this DmStats object."
 
+#define DMSTATS_region_present__doc__ \
+"Test whether region_id is present in this DmStats object."
+
 #define DMSTATS_nr_areas__doc__ \
 "Return the number of areas present in this DmStats object."
 
@@ -2103,6 +2117,8 @@ static PyMethodDef DmStats_methods[] = {
         PyDoc_STR(DMSTATS_nr_groups__doc__)},
     {"nr_areas", (PyCFunction)DmStats_nr_areas, METH_NOARGS,
         PyDoc_STR(DMSTATS_nr_areas__doc__)},
+    {"region_present", (PyCFunction)DmStats_region_present, METH_VARARGS,
+        PyDoc_STR(DMSTATS_region_present__doc__)},
     {NULL, NULL}
 };
 
