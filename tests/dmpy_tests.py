@@ -1080,4 +1080,11 @@ class DmpyTests(unittest.TestCase):
         # FIXME: generate a valid DM major/minor pair.
         self.assertTrue(dms.bind_devno(253, 0))
 
+    def test_stats_new_has_no_regions(self):
+        # Assert that a newly created / bound stats handle returns zero
+        # regions.
+        import dmpy as dm
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
+        self.assertTrue(dms)
+        self.assertFalse(dms.nr_regions())
 # vim: set et ts=4 sw=4 :
