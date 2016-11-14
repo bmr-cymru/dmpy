@@ -1983,10 +1983,91 @@ fail:
     return -1;
 }
 
+PyObject *DmStats_bind_devno(DmStatsObject *self, PyObject *args)
+{
+    int major, minor;
+
+    if (!PyArg_ParseTuple(args, "ii:bind_devno", &major, &minor))
+        return NULL;
+
+    if (!dm_stats_bind_devno(self->ob_dms, major, minor)) {
+        PyErr_SetString(PyExc_OSError, "Failed to bind DmStats to devno.");
+        return NULL;
+    }
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+PyObject *DmStats_bind_name(DmStatsObject *self, PyObject *args)
+{
+    char *name;
+
+    if (!PyArg_ParseTuple(args, "s:bind_name", &name))
+        return NULL;
+
+    if (!name || !strlen(name)) {
+        PyErr_SetString(PyExc_ValueError, "DmStats name cannot be empty "
+                        "or None.");
+        return NULL;
+    }
+
+    if (!dm_stats_bind_name(self->ob_dms, name)) {
+        PyErr_SetString(PyExc_OSError, "Failed to bind DmStats to name.");
+        return NULL;
+    }
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+PyObject *DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
+{
+    char *uuid;
+
+    if (!PyArg_ParseTuple(args, "s:bind_uuid", &uuid))
+        return NULL;
+
+    if (!uuid || !strlen(uuid)) {
+        PyErr_SetString(PyExc_ValueError, "DmStats uuid cannot be empty "
+                        "or None.");
+        return NULL;
+    }
+
+    if (!dm_stats_bind_uuid(self->ob_dms, uuid)) {
+        PyErr_SetString(PyExc_OSError, "Failed to bind DmStats to uuid.");
+        return NULL;
+    }
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+#define DMSTATS_bind_devno__doc__ \
+"Bind a DmStats object to the specified device major and minor values.\n" \
+"Any previous binding is cleared and any preexisting counter data\n"      \
+"contained in the object is released."
+
+#define DMSTATS_bind_name__doc__ \
+"Bind a DmStats object to the specified device name. Any previous\n" \
+"binding is cleared and any preexisting counter data contained in\n" \
+"the object is released."
+
+#define DMSTATS_bind_uuid__doc__ \
+"Bind a DmStats object to the specified device UUID. Any previous\n" \
+"binding is cleared and any preexisting counter data contained in\n" \
+"the object is released."
+
 #define DMSTATS___doc__ \
 ""
 
 static PyMethodDef DmStats_methods[] = {
+    {"bind_devno", (PyCFunction)DmStats_bind_devno, METH_VARARGS,
+        PyDoc_STR(DMSTATS_bind_devno__doc__)},
+    {"bind_name", (PyCFunction)DmStats_bind_name, METH_VARARGS,
+        PyDoc_STR(DMSTATS_bind_name__doc__)},
+    {"bind_uuid", (PyCFunction)DmStats_bind_uuid, METH_VARARGS,
+        PyDoc_STR(DMSTATS_bind_uuid__doc__)},
     {NULL, NULL}
 };
 
