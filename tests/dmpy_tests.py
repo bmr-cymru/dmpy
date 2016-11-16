@@ -113,6 +113,32 @@ def _get_driver_version_from_dmsetup():
         return line.split(":")[1].lstrip()
 
 
+def _create_stats(name, nr_areas=1, program_id="dmstats"):
+    args = "--programid %s" % program_id
+    if nr_areas > 1:
+        args += " --areas %d" % nr_areas
+
+    r = _get_cmd_output("dmstats create %s %s" % (args, name))
+    if r[0]:
+        raise OSError("Failed to create stats region")
+
+def _remove_all_stats(name):
+    # We use --allprograms --allregions here to work around dmstats versions
+    # that are missing commit 5eda393:
+	#
+	#  commit 5eda3934885b23ce06f862a56b524ceaab3cb565
+	#  Author: Bryn M. Reeves <bmr@redhat.com>
+	#  Date:   Mon Oct 24 17:21:18 2016 +0100
+	#
+	#     dmsetup: obey --programid when deleting regions
+	#
+    # Without this fix attempting to delete our own regions with --programid
+	# fails to remove all regions, causing assertion failures when dmpy tests
+	# attempt to validate the expected number of regions.
+    r = _get_cmd_output("dmstats delete --allprograms --allregions %s" % name)
+    if r[0]:
+        raise OSError("Failed to remove stats regions.")
+
 def _create_loopback(path, size):
     loop_file = join(path, "dmpy-test-img0")
     r = _get_cmd_output("dd if=/dev/zero of=%s bs=%d count=1" %
