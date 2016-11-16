@@ -991,7 +991,7 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(self.program_id)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_all_programs(self):
@@ -999,7 +999,7 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_no_program_id(self):
@@ -1007,7 +1007,7 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(None)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_bind_name(self):
@@ -1015,7 +1015,7 @@ class DmpyTests(unittest.TestCase):
         # the name= keword argument returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(self.program_id, name=self.dmpytest0)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_no_program_id_bind_name(self):
@@ -1023,7 +1023,7 @@ class DmpyTests(unittest.TestCase):
         # and a name= keyword argument returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(None, name=self.dmpytest0)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_multiple_bind_raises(self):
@@ -1085,7 +1085,7 @@ class DmpyTests(unittest.TestCase):
         # regions.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.nr_regions())
 
     def test_stats_new_has_no_groups(self):
@@ -1093,7 +1093,7 @@ class DmpyTests(unittest.TestCase):
         # groups.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.nr_groups())
 
     def test_stats_new_has_no_areas(self):
@@ -1101,7 +1101,7 @@ class DmpyTests(unittest.TestCase):
         # areas.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.nr_areas())
 
     def test_stats_not_present_region_is_not_present(self):
@@ -1116,7 +1116,7 @@ class DmpyTests(unittest.TestCase):
         # areas.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.region_nr_areas(0))
 
     def test_stats_new_handle_no_group_present(self):
