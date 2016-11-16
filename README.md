@@ -50,10 +50,14 @@ methods. The following dmpy classes are implemented:
   * `DmTask`,  Represents a dm_task object and its methods
   * `DmTimestamp` Represents the device-mapper dm_timestamp
   * `DmInfo`   A dm_info struct as returned by `DM_DEVICE_INFO`
+  * `DmStats`  Represents a dm_stats handle and the objects it contains
+  * `DmStatsRegion`  Represents one region and the areas it contains.
 
-All of these (except `DmInfo`) expose a class-name constructor in
-the module: `DmInfo` objects can only be constructed by retrieving
-one from a `DmTask` object that has executed a `DM_DEVICE_INFO` ioctl.
+All of these (except `DmInfo` and `DmStatsRegion`) expose a class-name
+constructor in the module: `DmInfo` objects can only be constructed by
+retrieving one from a `DmTask` object that has executed a
+`DM_DEVICE_INFO` ioctl. Similarly, `DmStatsRegion` objects should only
+be obtained by accessing the members of a containing `DmStats` object.`
 
 ## Getting help
 All classes, methods, and module functions have an associated `__doc__`

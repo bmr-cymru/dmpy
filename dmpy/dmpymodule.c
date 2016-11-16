@@ -1907,6 +1907,17 @@ static PyTypeObject DmStats_Type;
 
 #define DmStatsObject_Check(v)      (Py_TYPE(v) == &DmStats_Type)
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *ob_stats;
+    PyObject *ob_weakreflist;
+    uint64_t ob_region_id;
+} DmStatsRegionObject;
+
+static PyTypeObject DmStatsRegion_Type;
+
+#define DmStatsRegionObject_Check(v)      (Py_TYPE(v) == &DmStatsRegion_Type)
+
 static void
 DmStats_dealloc(DmStatsObject *self)
 {
@@ -2320,6 +2331,155 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_descr_set*/
     0,                          /*tp_dictoffset*/
     (initproc)DmStats_init,     /*tp_init*/
+    0,                          /*tp_alloc*/
+    0,                          /*tp_new*/
+    0,                          /*tp_free*/
+    0,                          /*tp_is_gc*/
+};
+
+static void
+DmStatsRegion_dealloc(DmStatsRegionObject *self)
+{
+    /* Notify our parent that we are departing. */
+    if (self->ob_weakreflist)
+        PyObject_ClearWeakRefs((PyObject *) self);
+
+    /* release our reference on the parent DmStats. */
+    Py_DECREF(self->ob_stats);
+    return;
+}
+
+static DmStatsRegionObject *
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id)
+{
+    DmStatsRegionObject *region;
+    region = PyObject_GC_New(DmStatsRegionObject, &DmStatsRegion_Type);
+    region->ob_region_id = region_id;
+    region->ob_weakreflist = NULL;
+    region->ob_stats = stats;
+
+    /* We keep a reference on the parent DmStats to prevent it (and its handle)
+     * from being deallocated.
+     */
+    Py_INCREF(stats);
+    return region;
+}
+
+static int
+DmStatsRegion_init(DmStatsRegionObject *self, PyObject *args, PyObject *kwds)
+{
+    uint64_t region_id;
+    if (!PyArg_ParseTuple(args, "i:__init__", &region_id))
+        return -1;
+    self->ob_region_id = region_id;
+    return 0;
+}
+
+static int
+DmStatsRegion_traverse(DmStatsRegionObject *self, visitproc visit, void *arg)
+{
+    Py_VISIT(self->ob_stats);
+    return 0;
+}
+
+static int
+DmStatsRegion_clear(DmStatsRegionObject *self)
+{
+    Py_CLEAR(self->ob_stats);
+    return 0;
+}
+
+Py_ssize_t
+DmStatsRegion_len(PyObject *o)
+{
+    DmStatsRegionObject *self = (DmStatsRegionObject *) o;
+    DmStatsObject *dmstats;
+    struct dm_stats *dms;
+
+    if (!DmStatsRegionObject_Check(o))
+        return -1;
+
+    dmstats = (DmStatsObject *) self->ob_stats;
+    if (!dmstats)
+        return 0;
+
+    dms = dmstats->ob_dms;
+    if (!dms)
+        return 0;
+
+    return (Py_ssize_t) dm_stats_get_region_nr_areas(dms, self->ob_region_id);
+}
+
+static PySequenceMethods DmStatsRegion_sequence_methods = {
+    DmStatsRegion_len,
+};
+
+
+static PyObject *
+DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
+{
+    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    uint64_t nr_areas;
+    nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, self->ob_region_id);
+    return Py_BuildValue("i", nr_areas);
+}
+
+#define DMSTATSREG_nr_areas__doc__ \
+"Return the number of areas contained in this region."
+
+#define DMSTATSREG___doc__ \
+""
+
+#define DMSTATSREG__doc__ \
+"Base class representing a region of a device-mapper statistics handle,\n"  \
+"including any areas and counters contained within it.\n\n"                 \
+
+static PyMethodDef DmStatsRegion_methods[] = {
+    {"nr_areas", (PyCFunction)DmStatsRegion_nr_areas, METH_NOARGS,
+        PyDoc_STR(DMSTATSREG_nr_areas__doc__)},
+    {NULL, NULL}
+};
+
+static PyTypeObject DmStatsRegion_Type = {
+    /* The ob_type field must be initialized in the module init function
+     * to be portable to Windows without using C++. */
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "dmpy.DmStatsRegion",             /*tp_name*/
+    sizeof(DmStatsRegionObject),      /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    /* methods */
+    (destructor)DmStatsRegion_dealloc,
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_reserved*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    &DmStatsRegion_sequence_methods, /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+    DMSTATSREG__doc__,          /*tp_doc*/
+    (traverseproc) DmStatsRegion_traverse, /*tp_traverse*/
+    (inquiry) DmStatsRegion_clear, /*tp_clear*/
+    0,                          /*tp_richcompare*/
+    offsetof(DmStatsRegionObject, ob_weakreflist), /*tp_weaklistoffset*/
+    0,                          /*tp_iter*/
+    0,                          /*tp_iternext*/
+    DmStatsRegion_methods,      /*tp_methods*/
+    0,                          /*tp_members*/
+    0,                          /*tp_getset*/
+    0,                          /*tp_base*/
+    0,                          /*tp_dict*/
+    0,                          /*tp_descr_get*/
+    0,                          /*tp_descr_set*/
+    0,                          /*tp_dictoffset*/
+    (initproc)DmStatsRegion_init, /*tp_init*/
     0,                          /*tp_alloc*/
     0,                          /*tp_new*/
     0,                          /*tp_free*/
@@ -3102,6 +3262,9 @@ dmpy_exec(PyObject *m)
     DmStats_Type.tp_base = &PyBaseObject_Type;
     DmStats_Type.tp_new = PyType_GenericNew;
 
+    DmStatsRegion_Type.tp_base = &PyBaseObject_Type;
+    DmStatsRegion_Type.tp_new = PyType_GenericNew;
+
     if (PyType_Ready(&DmTimestamp_Type) < 0)
         goto fail;
 
@@ -3115,6 +3278,9 @@ dmpy_exec(PyObject *m)
         goto fail;
 
     if (PyType_Ready(&DmStats_Type) < 0)
+        goto fail;
+
+    if (PyType_Ready(&DmStatsRegion_Type) < 0)
         goto fail;
 
     PyModule_AddObject(m, "DmStats", (PyObject *) &DmStats_Type);
