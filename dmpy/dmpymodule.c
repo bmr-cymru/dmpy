@@ -1901,11 +1901,24 @@ static PyTypeObject DmTask_Type = {
 typedef struct {
     PyObject_HEAD
     struct dm_stats *ob_dms;
+    PyObject **ob_regions; /* region cache */
+    Py_ssize_t ob_regions_len; /* length of the region cache in regions. */
 } DmStatsObject;
 
 static PyTypeObject DmStats_Type;
 
 #define DmStatsObject_Check(v)      (Py_TYPE(v) == &DmStats_Type)
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *ob_stats;
+    PyObject *ob_weakreflist;
+    uint64_t ob_region_id;
+} DmStatsRegionObject;
+
+static PyTypeObject DmStatsRegion_Type;
+
+#define DmStatsRegionObject_Check(v)      (Py_TYPE(v) == &DmStatsRegion_Type)
 
 static void
 DmStats_dealloc(DmStatsObject *self)
@@ -1913,7 +1926,32 @@ DmStats_dealloc(DmStatsObject *self)
     if (self->ob_dms)
         dm_stats_destroy(self->ob_dms);
     self->ob_dms = NULL;
-    PyObject_Del(self);
+    if (self->ob_regions) {
+        PyMem_Free(self->ob_regions);
+        self->ob_regions = NULL;
+        self->ob_regions_len = 0;
+    }
+    Py_TYPE(self)->tp_free(self);
+}
+
+static PyObject *
+DmStats_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    DmStatsObject *obj;
+
+    if (type == &DmStats_Type) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    if (!(obj = (DmStatsObject *) type->tp_alloc(&DmStats_Type, 0)))
+        return NULL;
+
+    obj->ob_dms = NULL;
+    obj->ob_regions = NULL;
+    obj->ob_regions_len = 0;
+
+    return (PyObject *) obj;
 }
 
 #define DMSTATS__init__KWARG_ERR "Please specify one of name=, uuid=, or " \
@@ -1986,6 +2024,92 @@ fail:
     dm_stats_destroy(self->ob_dms);
     return -1;
 }
+
+static int
+DmStats_traverse(DmStatsObject *self, visitproc visit, void *arg)
+{
+    int i;
+
+    printf("traversing @%p\n", self);
+
+    if (!self->ob_regions)
+        return 0;
+
+    for (i = 0; i < self->ob_regions_len; i++)
+        Py_VISIT(self->ob_regions[i]);
+    return 0;
+}
+
+static int
+DmStats_clear(DmStatsObject *self)
+{
+    int i;
+
+    printf("clearing %p\n", self);
+
+    if (!self->ob_regions)
+        return 0;
+
+    for (i = 0; i < self->ob_regions_len; i++)
+        Py_CLEAR(self->ob_regions[i]);
+    return 0;
+}
+
+/*
+ * DmStats Sequence Methods.
+ */
+
+Py_ssize_t DmStats_len(PyObject *o)
+{
+    DmStatsObject *self = (DmStatsObject *) o;
+
+    if (!DmStatsObject_Check(o))
+        return -1;
+
+    if (!self->ob_dms)
+        return 0;
+
+    return (Py_ssize_t) dm_stats_get_nr_regions(self->ob_dms);
+}
+
+static DmStatsRegionObject *
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id);
+
+PyObject *DmStats_get_item(PyObject *o, Py_ssize_t i)
+{
+    DmStatsObject *self = (DmStatsObject *) o;
+    PyObject *region;
+
+    if (!DmStatsObject_Check(o))
+        return NULL;
+
+    if ((i < 0) || ((uint64_t) i >= dm_stats_get_nr_regions(self->ob_dms))) {
+        PyErr_SetString(PyExc_IndexError, "region_id out of range");
+        return NULL;
+    }
+
+    if (!self->ob_regions[i]) {
+cache_new:
+        region = (PyObject *) newDmStatsRegionObject(o, i);
+        self->ob_regions[i] = PyWeakref_NewRef(region, NULL);
+    } else {
+        region = PyWeakref_GetObject(self->ob_regions[i]);
+        if (region == Py_None) {
+            Py_DECREF(self->ob_regions[i]);
+            goto cache_new;
+        }
+        Py_INCREF(region);
+    }
+
+    return region;
+}
+
+static PySequenceMethods DmStats_sequence_methods = {
+    DmStats_len,
+    0,
+    0,
+    DmStats_get_item
+};
 
 PyObject *DmStats_bind_devno(DmStatsObject *self, PyObject *args)
 {
@@ -2154,6 +2278,81 @@ PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *
     return Py_True;
 }
 
+void _DmStats_clear_region_cache(DmStatsObject *self)
+{
+    uint64_t nr_regions, i;
+
+    if (!self->ob_regions)
+        return;
+
+    /* If a region is in the cache, we are holding a reference. */
+    if (dm_stats_get_nr_areas(self->ob_dms)) {
+        nr_regions = dm_stats_get_nr_regions(self->ob_dms);
+        for (i = 0; i < nr_regions; i++)
+            Py_XDECREF(self->ob_regions[i]);
+    }
+    PyMem_Free(self->ob_regions);
+}
+
+void
+_DmStats_set_region_cache(DmStatsObject *self)
+{
+    uint64_t nr_regions;
+    if (dm_stats_get_nr_areas(self->ob_dms)) {
+        nr_regions = dm_stats_get_nr_regions(self->ob_dms);
+        self->ob_regions = PyMem_Malloc(sizeof(PyObject *) * nr_regions);
+        self->ob_regions_len = nr_regions;
+        memset(self->ob_regions, 0, nr_regions * sizeof(PyObject *));
+    }
+}
+
+PyObject *DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"program_id", NULL};
+    char *program_id = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z:list",
+                                     kwlist, &program_id))
+        return NULL;
+
+    _DmStats_clear_region_cache(self);
+
+    if (!dm_stats_list(self->ob_dms, program_id)) {
+        PyErr_SetString(PyExc_OSError, "Failed to get region list from "
+                        "device-mapper.");
+        return NULL;
+    }
+
+    _DmStats_set_region_cache(self);
+
+    Py_INCREF(self);
+    return (PyObject *) self;
+}
+
+PyObject *DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"program_id", "region_id", NULL};
+    uint64_t region_id = DM_STATS_REGIONS_ALL;
+    char *program_id = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zi:list",
+                                     kwlist, &program_id, &region_id))
+        return NULL;
+
+    _DmStats_clear_region_cache(self);
+
+    if (!dm_stats_populate(self->ob_dms, program_id, region_id)) {
+        PyErr_SetString(PyExc_OSError, "Failed to get region data from "
+                        "device-mapper.");
+        return NULL;
+    }
+
+    _DmStats_set_region_cache(self);
+
+    Py_INCREF(self);
+    return (PyObject *) self;
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2218,6 +2417,10 @@ PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *
 "library or the command line tools and use of this value is strongly\n"  \
 "discouraged."
 
+#define DMSTATS_list__doc__ \
+"Send a @stats_list message, and parse the result into this DmStats\n"   \
+"object."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2246,6 +2449,8 @@ static PyMethodDef DmStats_methods[] = {
         METH_VARARGS, PyDoc_STR(DMSTATS_get_sampling_interval__doc__)},
     {"set_program_id", (PyCFunction)DmStats_set_program_id,
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_set_program_id__doc__)},
+    {"list", (PyCFunction)DmStats_list,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_list__doc__)},
     {NULL, NULL}
 };
 
@@ -2295,7 +2500,7 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_reserved*/
     0,                          /*tp_repr*/
     0,                          /*tp_as_number*/
-    0,                          /*tp_as_sequence*/
+    &DmStats_sequence_methods,  /*tp_as_sequence*/
     0,                          /*tp_as_mapping*/
     0,                          /*tp_hash*/
     0,                          /*tp_call*/
@@ -2303,10 +2508,10 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
     DMSTATS__doc__,             /*tp_doc*/
-    0,                          /*tp_traverse*/
-    0,                          /*tp_clear*/
+    (traverseproc)DmStats_traverse, /*tp_traverse*/
+    (inquiry)DmStats_clear,     /*tp_clear*/
     0,                          /*tp_richcompare*/
     0,                          /*tp_weaklistoffset*/
     0,                          /*tp_iter*/
@@ -2320,6 +2525,161 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_descr_set*/
     0,                          /*tp_dictoffset*/
     (initproc)DmStats_init,     /*tp_init*/
+    0,                          /*tp_alloc*/
+    DmStats_new,                /*tp_new*/
+    PyObject_GC_Del,            /*tp_free*/
+    0,                          /*tp_is_gc*/
+};
+
+static void
+DmStatsRegion_dealloc(DmStatsRegionObject *self)
+{
+    /* Notify our parent that we are departing. */
+    if (self->ob_weakreflist)
+        PyObject_ClearWeakRefs((PyObject *) self);
+
+    /* release our reference on the parent DmStats. */
+    Py_DECREF(self->ob_stats);
+    return;
+}
+
+static DmStatsRegionObject *
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id)
+{
+    DmStatsRegionObject *region;
+    region = PyObject_GC_New(DmStatsRegionObject, &DmStatsRegion_Type);
+    region->ob_region_id = region_id;
+    region->ob_weakreflist = NULL;
+    region->ob_stats = stats;
+
+    printf("newDmStatsRegionObject @%ps", stats);
+    /* keep a reference on the parent DmStats to prevent it (and its handle)
+     * from being deallocated.
+     */
+    Py_INCREF(stats);
+    return region;
+}
+
+static int
+DmStatsRegion_init(DmStatsRegionObject *self, PyObject *args, PyObject *kwds)
+{
+    uint64_t region_id;
+    if (!PyArg_ParseTuple(args, "i:__init__", &region_id))
+        return -1;
+    self->ob_region_id = region_id;
+    return 0;
+}
+
+static int
+DmStatsRegion_traverse(DmStatsRegionObject *self, visitproc visit, void *arg)
+{
+    printf("region traversing @%p\n", self);
+    Py_VISIT(self->ob_stats);
+
+    return 0;
+}
+
+static int
+DmStatsRegion_clear(DmStatsRegionObject *self)
+{
+    printf("region clearing %p\n", self);
+    Py_CLEAR(self->ob_stats);
+
+    return 0;
+}
+
+Py_ssize_t DmStatsRegion_len(PyObject *o)
+{
+    DmStatsRegionObject *self = (DmStatsRegionObject *) o;
+    DmStatsObject *dmstats;
+    struct dm_stats *dms;
+
+    if (!DmStatsRegionObject_Check(o))
+        return -1;
+
+    dmstats = (DmStatsObject *) self->ob_stats;
+    if (!dmstats)
+        return 0;
+
+    dms = dmstats->ob_dms;
+    if (!dms)
+        return 0;
+
+    return (Py_ssize_t) dm_stats_get_nr_regions(dms);
+}
+
+static PySequenceMethods DmStatsRegion_sequence_methods = {
+    DmStatsRegion_len,
+};
+
+
+static PyObject *
+DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
+{
+    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    uint64_t nr_areas;
+
+    if (!DmStatsObject_Check(stats)) {
+        PyErr_SetString(PyExc_SystemError, "Invalid DmStats object link.");
+        return NULL;
+    }
+
+    nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, self->ob_region_id);
+    return Py_BuildValue("i", nr_areas);
+}
+
+#define DMSTATSREG_nr_areas__doc__ \
+"Return the number of areas contained in this region."
+
+#define DMSTATSREG___doc__ \
+""
+
+static PyMethodDef DmStatsRegion_methods[] = {
+    {"nr_areas", (PyCFunction)DmStatsRegion_nr_areas, METH_NOARGS,
+        PyDoc_STR(DMSTATSREG_nr_areas__doc__)},
+    {NULL, NULL}
+};
+
+static PyTypeObject DmStatsRegion_Type = {
+    /* The ob_type field must be initialized in the module init function
+     * to be portable to Windows without using C++. */
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "dmpy.DmStatsRegion",             /*tp_name*/
+    sizeof(DmStatsRegionObject),      /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    /* methods */
+    (destructor)DmStatsRegion_dealloc,
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_reserved*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    &DmStatsRegion_sequence_methods, /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+    DMSTATS__doc__,             /*tp_doc*/
+    (traverseproc) DmStatsRegion_traverse, /*tp_traverse*/
+    (inquiry) DmStatsRegion_clear, /*tp_clear*/
+    0,                          /*tp_richcompare*/
+    offsetof(DmStatsRegionObject, ob_weakreflist), /*tp_weaklistoffset*/
+    0,                          /*tp_iter*/
+    0,                          /*tp_iternext*/
+    DmStatsRegion_methods,      /*tp_methods*/
+    0,                          /*tp_members*/
+    0,                          /*tp_getset*/
+    0,                          /*tp_base*/
+    0,                          /*tp_dict*/
+    0,                          /*tp_descr_get*/
+    0,                          /*tp_descr_set*/
+    0,                          /*tp_dictoffset*/
+    (initproc)DmStatsRegion_init, /*tp_init*/
     0,                          /*tp_alloc*/
     0,                          /*tp_new*/
     0,                          /*tp_free*/
@@ -3102,6 +3462,9 @@ dmpy_exec(PyObject *m)
     DmStats_Type.tp_base = &PyBaseObject_Type;
     DmStats_Type.tp_new = PyType_GenericNew;
 
+    DmStatsRegion_Type.tp_base = &PyBaseObject_Type;
+    DmStatsRegion_Type.tp_new = PyType_GenericNew;
+
     if (PyType_Ready(&DmTimestamp_Type) < 0)
         goto fail;
 
@@ -3115,6 +3478,9 @@ dmpy_exec(PyObject *m)
         goto fail;
 
     if (PyType_Ready(&DmStats_Type) < 0)
+        goto fail;
+
+    if (PyType_Ready(&DmStatsRegion_Type) < 0)
         goto fail;
 
     PyModule_AddObject(m, "DmStats", (PyObject *) &DmStats_Type);

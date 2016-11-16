@@ -113,6 +113,32 @@ def _get_driver_version_from_dmsetup():
         return line.split(":")[1].lstrip()
 
 
+def _create_stats(name, nr_areas=1, program_id="dmstats"):
+    args = "--programid %s" % program_id
+    if nr_areas > 1:
+        args += " --areas %d" % nr_areas
+
+    r = _get_cmd_output("dmstats create %s %s" % (args, name))
+    if r[0]:
+        raise OSError("Failed to create stats region")
+
+def _remove_all_stats(name):
+    # We use --allprograms --allregions here to work around dmstats versions
+    # that are missing commit 5eda393:
+	#
+	#  commit 5eda3934885b23ce06f862a56b524ceaab3cb565
+	#  Author: Bryn M. Reeves <bmr@redhat.com>
+	#  Date:   Mon Oct 24 17:21:18 2016 +0100
+	#
+	#     dmsetup: obey --programid when deleting regions
+	#
+    # Without this fix attempting to delete our own regions with --programid
+	# fails to remove all regions, causing assertion failures when dmpy tests
+	# attempt to validate the expected number of regions.
+    r = _get_cmd_output("dmstats delete --allprograms --allregions %s" % name)
+    if r[0]:
+        raise OSError("Failed to remove stats regions.")
+
 def _create_loopback(path, size):
     loop_file = join(path, "dmpy-test-img0")
     r = _get_cmd_output("dd if=/dev/zero of=%s bs=%d count=1" %
@@ -991,7 +1017,7 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(self.program_id)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_all_programs(self):
@@ -999,7 +1025,7 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_no_program_id(self):
@@ -1007,7 +1033,7 @@ class DmpyTests(unittest.TestCase):
         # returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(None)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_bind_name(self):
@@ -1015,7 +1041,7 @@ class DmpyTests(unittest.TestCase):
         # the name= keword argument returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(self.program_id, name=self.dmpytest0)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_no_program_id_bind_name(self):
@@ -1023,7 +1049,7 @@ class DmpyTests(unittest.TestCase):
         # and a name= keyword argument returns a valid object.
         import dmpy as dm
         dms = dm.DmStats(None, name=self.dmpytest0)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertEqual(type(dms), dm.DmStats)
 
     def test_stats_create_multiple_bind_raises(self):
@@ -1085,7 +1111,7 @@ class DmpyTests(unittest.TestCase):
         # regions.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.nr_regions())
 
     def test_stats_new_has_no_groups(self):
@@ -1093,7 +1119,7 @@ class DmpyTests(unittest.TestCase):
         # groups.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.nr_groups())
 
     def test_stats_new_has_no_areas(self):
@@ -1101,7 +1127,7 @@ class DmpyTests(unittest.TestCase):
         # areas.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.nr_areas())
 
     def test_stats_not_present_region_is_not_present(self):
@@ -1116,7 +1142,7 @@ class DmpyTests(unittest.TestCase):
         # areas.
         import dmpy as dm
         dms = dm.DmStats(dm.STATS_ALL_PROGRAMS)
-        self.assertTrue(dms)
+        self.assertTrue(dms.__init__)
         self.assertFalse(dms.region_nr_areas(0))
 
     def test_stats_new_handle_no_group_present(self):
@@ -1158,5 +1184,49 @@ class DmpyTests(unittest.TestCase):
         import dmpy as dm
         dms = dm.DmStats(self.program_id)
         self.assertTrue(dms.set_program_id("qux"))
+
+    def test_stats_list(self):
+        # Assert that listing an empty device yields an empty
+        # DmStats object, and that the correct number of regions is
+        # returned when listing a device with regions present.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        print("dms1a: %s" % dms)
+        self.assertFalse(dms.list())
+        self.assertEqual(len(dms), 0)
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        print("dms2a: %s" % dms)
+        self.assertTrue(dms.list())
+        self.assertEqual(len(dms), 1)
+        _remove_all_stats(self.dmpytest0)
+        _create_stats(self.dmpytest0, nr_areas=4, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        print("dms3a: %s" % dms)
+        self.assertTrue(dms.list())
+        self.assertEqual(len(dms), 1)
+
+    #
+    # DmStatsRegion tests.
+    #
+
+    def test_region_nr_areas(self):
+        # Assert that listing an empty device yields an empty
+        # DmStats object, and that the correct number of regions is
+        # returned when listing a device with regions present.
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        print("dms1b: %s" % dms)
+        self.assertTrue(dms.list())
+        self.assertEqual(len(dms), 1)
+        self.assertEqual(dms[0].nr_areas(), 1)
+        _remove_all_stats(self.dmpytest0)
+        _create_stats(self.dmpytest0, nr_areas=4, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        print("dms2b: %s" % dms)
+        self.assertTrue(dms.list())
+        self.assertEqual(len(dms), 1)
+        self.assertEqual(dms[0].nr_areas(), 4)
 
 # vim: set et ts=4 sw=4 :
