@@ -1901,6 +1901,7 @@ static PyTypeObject DmTask_Type = {
 typedef struct {
     PyObject_HEAD
     struct dm_stats *ob_dms;
+    uint64_t ob_sequence; /* sequence number protecting ob_dms */
     PyObject **ob_regions; /* region cache */
     Py_ssize_t ob_regions_len; /* length of the region cache in regions. */
 } DmStatsObject;
@@ -1912,8 +1913,9 @@ static PyTypeObject DmStats_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *ob_stats;
-    PyObject *ob_weakreflist;
+    uint64_t ob_sequence;
     uint64_t ob_region_id;
+    PyObject *ob_weakreflist;
     PyObject **ob_areas;
     Py_ssize_t ob_areas_len;
 } DmStatsRegionObject;
@@ -1944,6 +1946,7 @@ DmStats_dealloc(DmStatsObject *self)
         self->ob_regions = NULL;
         self->ob_regions_len = 0;
     }
+    self->ob_sequence = UINT64_MAX;
     Py_TYPE(self)->tp_free(self);
 }
 
@@ -1961,6 +1964,7 @@ DmStats_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         return NULL;
 
     obj->ob_dms = NULL;
+    obj->ob_sequence = 0;
     obj->ob_regions = NULL;
     obj->ob_regions_len = 0;
 
@@ -2083,7 +2087,7 @@ DmStats_len(PyObject *o)
 }
 
 static DmStatsRegionObject *
-newDmStatsRegionObject(PyObject *stats, uint64_t region_id);
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id, uint64_t sequence);
 
 static void
 _DmStatsRegion_clear_area_cache(DmStatsRegionObject *self)
@@ -2142,7 +2146,7 @@ DmStats_get_item(PyObject *o, Py_ssize_t i)
     if (!self->ob_regions[i]) {
 cache_new:
         /* cache miss */
-        region = (PyObject *) newDmStatsRegionObject(o, i);
+        region = (PyObject *) newDmStatsRegionObject(o, i, self->ob_sequence);
         self->ob_regions[i] = PyWeakref_NewRef(region, NULL);
         _DmStatsRegion_set_area_cache((DmStatsRegionObject *) region);
     } else {
@@ -2179,6 +2183,7 @@ PyObject *DmStats_bind_devno(DmStatsObject *self, PyObject *args)
         return NULL;
     }
 
+    self->ob_sequence++;
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -2201,6 +2206,7 @@ PyObject *DmStats_bind_name(DmStatsObject *self, PyObject *args)
         return NULL;
     }
 
+    self->ob_sequence++;
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -2223,6 +2229,7 @@ PyObject *DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
         return NULL;
     }
 
+    self->ob_sequence++;
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -2402,7 +2409,7 @@ DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
                         "device-mapper.");
         return NULL;
     }
-
+    self->ob_sequence++;
     _DmStats_set_region_cache(self);
 
     Py_INCREF(self);
@@ -2426,7 +2433,7 @@ DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
                         "device-mapper.");
         return NULL;
     }
-
+    self->ob_sequence++;
     _DmStats_set_region_cache(self);
 
     Py_INCREF(self);
@@ -2629,11 +2636,12 @@ DmStatsRegion_dealloc(DmStatsRegionObject *self)
 }
 
 static DmStatsRegionObject *
-newDmStatsRegionObject(PyObject *stats, uint64_t region_id)
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id, uint64_t sequence)
 {
     DmStatsRegionObject *region;
     region = PyObject_GC_New(DmStatsRegionObject, &DmStatsRegion_Type);
     region->ob_region_id = region_id;
+    region->ob_sequence = sequence;
     region->ob_weakreflist = NULL;
     region->ob_stats = stats;
 
