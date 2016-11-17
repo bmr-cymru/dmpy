@@ -1249,4 +1249,25 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dms.populate())
         self.assertEqual(len(dms), 1)
 
+    #
+    # DmStatsRegion tests.
+    #
+
+    def test_region_nr_areas(self):
+        # Assert that listing an empty device yields an empty
+        # DmStats object, and that the correct number of regions is
+        # returned when listing a device with regions present.
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        self.assertTrue(dms.list())
+        self.assertEqual(len(dms), 1)
+        self.assertEqual(dms[0].nr_areas(), 1)
+        _remove_all_stats(self.dmpytest0)
+        _create_stats(self.dmpytest0, nr_areas=4, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        self.assertTrue(dms.list())
+        self.assertEqual(len(dms), 1)
+        self.assertEqual(dms[0].nr_areas(), 4)
+
 # vim: set et ts=4 sw=4 :
