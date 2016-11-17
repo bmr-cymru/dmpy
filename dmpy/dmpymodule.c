@@ -2093,7 +2093,7 @@ DmStats_len(PyObject *o)
 }
 
 static DmStatsRegionObject *
-newDmStatsRegionObject(PyObject *stats, uint64_t region_id, uint64_t sequence);
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id);
 
 static void
 _DmStatsRegion_clear_area_cache(DmStatsRegionObject *self)
@@ -2151,7 +2151,7 @@ DmStats_get_item(PyObject *o, Py_ssize_t i)
     if (!self->ob_regions[i]) {
 cache_new:
         /* cache miss */
-        region = (PyObject *) newDmStatsRegionObject(o, i, self->ob_sequence);
+        region = (PyObject *) newDmStatsRegionObject(o, i);
         self->ob_regions[i] = PyWeakref_NewRef(region, NULL);
         _DmStatsRegion_set_area_cache((DmStatsRegionObject *) region);
     } else {
@@ -2641,12 +2641,12 @@ DmStatsRegion_dealloc(DmStatsRegionObject *self)
 }
 
 static DmStatsRegionObject *
-newDmStatsRegionObject(PyObject *stats, uint64_t region_id, uint64_t sequence)
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id)
 {
     DmStatsRegionObject *region;
     region = PyObject_GC_New(DmStatsRegionObject, &DmStatsRegion_Type);
     region->ob_region_id = region_id;
-    region->ob_sequence = sequence;
+    region->ob_sequence = ((DmStatsObject *)stats)->ob_sequence;
     region->ob_weakreflist = NULL;
     region->ob_stats = stats;
 
