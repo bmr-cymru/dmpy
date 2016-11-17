@@ -1262,13 +1262,13 @@ class DmpyTests(unittest.TestCase):
         dms = dm.DmStats(self.program_id, name=self.dmpytest0)
         self.assertTrue(dms.list())
         self.assertEqual(len(dms), 1)
-        self.assertEqual(dms[0].nr_areas(), 1)
+        self.assertEqual(dms[0].nr_areas, 1)
         _remove_all_stats(self.dmpytest0)
         _create_stats(self.dmpytest0, nr_areas=4, program_id=self.program_id)
         dms = dm.DmStats(self.program_id, name=self.dmpytest0)
         self.assertTrue(dms.list())
         self.assertEqual(len(dms), 1)
-        self.assertEqual(dms[0].nr_areas(), 4)
+        self.assertEqual(dms[0].nr_areas, 4)
 
     def test_valid_region_nr_areas_seq_check_noraise(self):
         # Assert that when an attempt is made to access a member of a
@@ -1283,7 +1283,7 @@ class DmpyTests(unittest.TestCase):
         # Take a reference on a DmStatsRegion
         region = dms[0]
         # Access the parent via reference.
-        self.assertTrue(region.nr_areas())
+        self.assertTrue(region.nr_areas)
 
     def test_invalid_region_nr_areas_seq_check_raises(self):
         # Assert that when an attempt is made to access a member of a
@@ -1300,6 +1300,6 @@ class DmpyTests(unittest.TestCase):
         # Invalidate the whole DmStats
         dms.list()
         with self.assertRaises(LookupError) as cm:
-            region.nr_areas()
+            region.nr_areas
 
 # vim: set et ts=4 sw=4 :
