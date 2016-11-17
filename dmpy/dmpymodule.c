@@ -1924,6 +1924,9 @@ static PyTypeObject DmStatsRegion_Type;
 
 #define DmStatsRegionObject_Check(v)      (Py_TYPE(v) == &DmStatsRegion_Type)
 
+#define DMSTATS_FROM_REGION(r) ((DmStatsObject *)((r)->ob_stats))
+#define DMS_FROM_REGION(r) (DMSTATS_FROM_REGION((r))->ob_dms)
+
 typedef struct {
     PyObject_HEAD
     PyObject *ob_stats;
@@ -2112,8 +2115,7 @@ _DmStatsRegion_clear_area_cache(DmStatsRegionObject *self)
 static void
 _DmStatsRegion_set_area_cache(DmStatsRegionObject *self)
 {
-    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
-    struct dm_stats *dms = stats->ob_dms;
+    struct dm_stats *dms = DMS_FROM_REGION(self);
     uint64_t nr_slots;
 
     nr_slots = dm_stats_get_region_nr_areas(dms, self->ob_region_id);
@@ -2680,17 +2682,12 @@ Py_ssize_t
 DmStatsRegion_len(PyObject *o)
 {
     DmStatsRegionObject *self = (DmStatsRegionObject *) o;
-    DmStatsObject *dmstats;
     struct dm_stats *dms;
 
     if (!DmStatsRegionObject_Check(o))
         return -1;
 
-    dmstats = (DmStatsObject *) self->ob_stats;
-    if (!dmstats)
-        return 0;
-
-    dms = dmstats->ob_dms;
+    dms = DMS_FROM_REGION(self);
     if (!dms)
         return 0;
 
