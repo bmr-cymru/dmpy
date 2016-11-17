@@ -2836,6 +2836,31 @@ DmStatsRegion_precise_timestamps_getter(PyObject *self, void *arg)
     return ret;
 }
 
+#define MkDmStatsRegion_startlen_getter(name)                                \
+static PyObject *                                                            \
+DmStatsRegion_ ## name ##_getter(PyObject *self, void *arg)                  \
+{                                                                            \
+    DmStatsRegionObject *reg = (DmStatsRegionObject *) self;                 \
+    DmStatsObject *stats = DMSTATS_FROM_REGION(reg);                         \
+    uint64_t name;                                                           \
+    int r;                                                                   \
+                                                                             \
+    DmStatsRegion_SeqCheck(self);                                            \
+                                                                             \
+    r = dm_stats_get_region_ ## name(stats->ob_dms, &name,                   \
+                                     reg->ob_region_id);                     \
+    if (!r) {                                                                \
+        PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "     \
+                        "state: no region data.");                           \
+        return NULL;                                                         \
+    }                                                                        \
+    return Py_BuildValue("l", name);                                         \
+}
+
+MkDmStatsRegion_startlen_getter(start)
+MkDmStatsRegion_startlen_getter(len)
+MkDmStatsRegion_startlen_getter(area_len)
+
 #define DMSTATSREG_nr_areas_gets__doc__                \
 "Return the number of areas contained in this region."
 
@@ -2847,6 +2872,15 @@ DmStatsRegion_precise_timestamps_getter(PyObject *self, void *arg)
 "enabled (i.e. produces nanosecond-precision counter values) or False for\n" \
 "a region using the default milisecond precision."
 
+#define DMSTATSREG_start_gets__doc__ \
+"The start offset of this region in sectors."
+
+#define DMSTATSREG_len_gets__doc__ \
+"The length of this region in sectors."
+
+#define DMSTATSREG_area_len_gets__doc__ \
+"The lenght of each area contained in this region."
+
 static PyGetSetDef DmStatsRegion_getsets[] = {
     {"present", DmStatsRegion_present_getter, NULL,
       PyDoc_STR(DMSTATSREG_present_gets__doc__), NULL},
@@ -2854,6 +2888,12 @@ static PyGetSetDef DmStatsRegion_getsets[] = {
       PyDoc_STR(DMSTATSREG_nr_areas_gets__doc__), NULL},
     {"precise_timestamps", DmStatsRegion_precise_timestamps_getter, NULL,
       PyDoc_STR(DMSTATSREG_precise_timestamps_gets__doc__), NULL},
+    {"start", DmStatsRegion_start_getter, NULL,
+      PyDoc_STR(DMSTATSREG_start_gets__doc__), NULL},
+    {"len", DmStatsRegion_len_getter, NULL,
+      PyDoc_STR(DMSTATSREG_len_gets__doc__), NULL},
+    {"area_len", DmStatsRegion_area_len_getter, NULL,
+      PyDoc_STR(DMSTATSREG_area_len_gets__doc__), NULL},
     {NULL, NULL}
 };
 
