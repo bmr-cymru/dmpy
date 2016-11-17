@@ -2751,12 +2751,36 @@ static PySequenceMethods DmStatsRegion_sequence_methods = {
     DmStatsRegion_get_item
 };
 
+/* Check the sequence number for this DmStatsRegion against its parent.
+ * The ob_sequence value stored in DmStats is initialised to zero, and
+ * incremented on each operation that invalidates the handle's tables
+ * (bind, list, populate).
+ *
+ * If the sequence number we are holding, and the one stored in the
+ * parent do not match, the handle has been invalidated since this
+ * object was created and all operations should raise LookupError.
+ */
+static int
+_DmStatsRegion_sequence_check(DmStatsRegionObject *self)
+{
+    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    if (self->ob_sequence != stats->ob_sequence) {
+        PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
+                        " changed DmStats object.");
+        return -1;
+    }
+    return 0;
+}
 
 static PyObject *
 DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
 {
     DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
     uint64_t nr_areas;
+
+    if (_DmStatsRegion_sequence_check(self))
+        return NULL;
+
     nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, self->ob_region_id);
     return Py_BuildValue("i", nr_areas);
 }
