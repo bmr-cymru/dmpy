@@ -1403,4 +1403,16 @@ class DmpyTests(unittest.TestCase):
         self.assertEqual(dms[1][1].len, 256)
         self.assertEqual(dms[1][1].offset, 256)
 
+    def test_dmstatsarea_region_id_attr(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, program_id=self.program_id)
+        _create_stats(self.dmpytest0, program_id=self.program_id, nr_areas=8)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.list()
+        self.assertEqual(dms[0].region_id, 0)
+        self.assertEqual(dms[1].region_id, 1)
+        dms.populate()
+        self.assertEqual(dms[0].region_id, 0)
+        self.assertEqual(dms[1].region_id, 1)
+
 # vim: set et ts=4 sw=4 :
