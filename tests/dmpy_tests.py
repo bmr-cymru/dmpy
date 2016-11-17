@@ -1455,4 +1455,27 @@ class DmpyTests(unittest.TestCase):
         gc.collect()
         self.assertNotEqual(reg_str, str(dms[0]))
 
+    #
+    # Counter tests
+    #
+    def test_dmstats_counter_names_get_values(self):
+        import dmpy as dm
+        import gc
+        _create_stats(self.dmpytest0, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.populate(self.program_id, dm.STATS_REGIONS_ALL)
+        self.assertEqual(type(dms[0][0].READS_COUNT), int)
+        self.assertEqual(type(dms[0][0].READS_MERGED_COUNT), int)
+        self.assertEqual(type(dms[0][0].READ_SECTORS_COUNT), int)
+        self.assertEqual(type(dms[0][0].READ_NSECS), int)
+        self.assertEqual(type(dms[0][0].WRITES_COUNT), int)
+        self.assertEqual(type(dms[0][0].WRITES_MERGED_COUNT), int)
+        self.assertEqual(type(dms[0][0].WRITE_SECTORS_COUNT), int)
+        self.assertEqual(type(dms[0][0].WRITE_NSECS), int)
+        self.assertEqual(type(dms[0][0].IO_IN_PROGRESS_COUNT), int)
+        self.assertEqual(type(dms[0][0].IO_NSECS), int)
+        self.assertEqual(type(dms[0][0].WEIGHTED_IO_NSECS), int)
+        self.assertEqual(type(dms[0][0].TOTAL_READ_NSECS), int)
+        self.assertEqual(type(dms[0][0].TOTAL_WRITE_NSECS), int)
+
 # vim: set et ts=4 sw=4 :
