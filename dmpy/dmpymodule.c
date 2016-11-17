@@ -2284,6 +2284,70 @@ PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *
     return Py_True;
 }
 
+void
+_DmStats_clear_region_cache(DmStatsObject *self)
+{
+    int64_t i;
+
+    if (!self->ob_regions)
+        return;
+
+    /* If a region is in the cache, we are holding a reference
+     * to the Weakref object that represents it.
+     */
+    if (self->ob_regions_len) {
+        for (i = 0; i < self->ob_regions_len; i++)
+            Py_XDECREF(self->ob_regions[i]);
+    }
+    PyMem_Free(self->ob_regions);
+    self->ob_regions = NULL;
+    self->ob_regions_len = 0;
+}
+
+void
+_DmStats_set_region_cache(DmStatsObject *self)
+{
+    struct dm_stats *dms;
+    uint64_t nr_slots, region_id, max_region = 0;
+
+    dms = self->ob_dms;
+
+    if (dm_stats_get_nr_areas(dms)) {
+        dm_stats_foreach_region(dms) {
+            region_id = dm_stats_get_current_region(dms);
+            max_region = (region_id > max_region) ? region_id : max_region;
+        }
+        nr_slots = max_region + 1;
+        self->ob_regions = PyMem_Malloc(sizeof(PyObject *) * nr_slots);
+        self->ob_regions_len = nr_slots;
+        memset(self->ob_regions, 0, nr_slots * sizeof(PyObject *));
+    }
+}
+
+PyObject *
+DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"program_id", NULL};
+    char *program_id = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z:list",
+                                     kwlist, &program_id))
+        return NULL;
+
+    _DmStats_clear_region_cache(self);
+
+    if (!dm_stats_list(self->ob_dms, program_id)) {
+        PyErr_SetString(PyExc_OSError, "Failed to get region list from "
+                        "device-mapper.");
+        return NULL;
+    }
+
+    _DmStats_set_region_cache(self);
+
+    Py_INCREF(self);
+    return (PyObject *) self;
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2348,6 +2412,10 @@ PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *
 "library or the command line tools and use of this value is strongly\n"  \
 "discouraged."
 
+#define DMSTATS_list__doc__ \
+"Send a @stats_list message, and parse the result into this DmStats\n"   \
+"object."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2376,6 +2444,8 @@ static PyMethodDef DmStats_methods[] = {
         METH_VARARGS, PyDoc_STR(DMSTATS_get_sampling_interval__doc__)},
     {"set_program_id", (PyCFunction)DmStats_set_program_id,
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_set_program_id__doc__)},
+    {"list", (PyCFunction)DmStats_list,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_list__doc__)},
     {NULL, NULL}
 };
 
