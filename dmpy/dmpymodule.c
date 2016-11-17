@@ -2348,6 +2348,30 @@ DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
     return (PyObject *) self;
 }
 
+PyObject *
+DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"program_id", "region_id", NULL};
+    uint64_t region_id = DM_STATS_REGIONS_ALL;
+    char *program_id = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zl:list",
+                                     kwlist, &program_id, &region_id))
+        return NULL;
+
+    _DmStats_clear_region_cache(self);
+    if (!dm_stats_populate(self->ob_dms, program_id, region_id)) {
+        PyErr_SetString(PyExc_OSError, "Failed to get region data from "
+                        "device-mapper.");
+        return NULL;
+    }
+
+    _DmStats_set_region_cache(self);
+
+    Py_INCREF(self);
+    return (PyObject *) self;
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2416,6 +2440,9 @@ DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
 "Send a @stats_list message, and parse the result into this DmStats\n"   \
 "object."
 
+#define DMSTATS_populate__doc__ \
+"Populate this DmStats object with data from device-mapper."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2446,6 +2473,8 @@ static PyMethodDef DmStats_methods[] = {
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_set_program_id__doc__)},
     {"list", (PyCFunction)DmStats_list,
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_list__doc__)},
+    {"populate", (PyCFunction)DmStats_populate,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_populate__doc__)},
     {NULL, NULL}
 };
 
@@ -3283,6 +3312,8 @@ static int _dmpy_add_stats_constants(PyObject *m)
 {
     PyModule_AddObject(m, "STATS_ALL_PROGRAMS",
                        Py_BuildValue("s", DM_STATS_ALL_PROGRAMS));
+    PyModule_AddObject(m, "STATS_REGIONS_ALL",
+                       Py_BuildValue("l", DM_STATS_REGIONS_ALL));
     return 0;
 }
 
