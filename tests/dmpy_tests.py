@@ -1270,4 +1270,36 @@ class DmpyTests(unittest.TestCase):
         self.assertEqual(len(dms), 1)
         self.assertEqual(dms[0].nr_areas(), 4)
 
+    def test_valid_region_nr_areas_seq_check_noraise(self):
+        # Assert that when an attempt is made to access a member of a
+        # DmStatsRegion, that depends on the parent DmStats' state, *after*
+        # an invalidating DmStats operation, correctly causes the LookupError
+        # exception to be raised.
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.populate()
+        self.assertTrue(len(dms[0]))
+        # Take a reference on a DmStatsRegion
+        region = dms[0]
+        # Access the parent via reference.
+        self.assertTrue(region.nr_areas())
+
+    def test_invalid_region_nr_areas_seq_check_raises(self):
+        # Assert that when an attempt is made to access a member of a
+        # DmStatsRegion, that depends on the parent DmStats' state, *after*
+        # an invalidating DmStats operation, correctly causes the LookupError
+        # exception to be raised.
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.populate()
+        self.assertTrue(len(dms[0]))
+        # Take a reference on a DmStatsRegion
+        region = dms[0]
+        # Invalidate the whole DmStats
+        dms.list()
+        with self.assertRaises(LookupError) as cm:
+            region.nr_areas()
+
 # vim: set et ts=4 sw=4 :
