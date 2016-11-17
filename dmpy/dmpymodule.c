@@ -3969,6 +3969,9 @@ dmpy_exec(PyObject *m)
     DmStatsRegion_Type.tp_base = &PyBaseObject_Type;
     DmStatsRegion_Type.tp_new = PyType_GenericNew;
 
+    DmStatsArea_Type.tp_base = &PyBaseObject_Type;
+    DmStatsArea_Type.tp_new = PyType_GenericNew;
+
     if (PyType_Ready(&DmTimestamp_Type) < 0)
         goto fail;
 
@@ -3985,6 +3988,9 @@ dmpy_exec(PyObject *m)
         goto fail;
 
     if (PyType_Ready(&DmStatsRegion_Type) < 0)
+        goto fail;
+
+    if (PyType_Ready(&DmStatsArea_Type) < 0)
         goto fail;
 
     PyModule_AddObject(m, "DmStats", (PyObject *) &DmStats_Type);
