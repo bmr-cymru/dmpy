@@ -2810,7 +2810,27 @@ static PyMethodDef DmStatsRegion_methods[] = {
     {NULL, NULL}
 };
 
+static PyObject *
+DmStatsRegion_present_getter(PyObject *self, void *arg)
+{
+    DmStatsRegionObject *reg = (DmStatsRegionObject *) self;
+    struct dm_stats *dms = DMS_FROM_REGION(reg);
+    PyObject *ret;
+
+    DmStatsRegion_SeqCheck(self);
+
+    ret = (dm_stats_region_present(dms, reg->ob_region_id))
+        ? Py_True : Py_False;
+    Py_INCREF(ret);
+    return ret;
+}
+
+#define DMSTATSREG_present_getsets__doc__ \
+"Boolean indicating whether this region is present or not."
+
 static PyGetSetDef DmStatsRegion_getsets[] = {
+    {"present", DmStatsRegion_present_getter, NULL,
+      PyDoc_STR(DMSTATSREG_present_getsets__doc__), NULL},
     {NULL, NULL}
 };
 
