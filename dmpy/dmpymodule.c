@@ -2821,17 +2821,39 @@ DmStatsRegion_present_getter(PyObject *self, void *arg)
     return ret;
 }
 
-#define DMSTATSREG_nr_areas_gets__doc__ \
+static PyObject *
+DmStatsRegion_precise_timestamps_getter(PyObject *self, void *arg)
+{
+    DmStatsRegionObject *reg = (DmStatsRegionObject *) self;
+    struct dm_stats *dms = DMS_FROM_REGION(reg);
+    PyObject *ret;
+
+    DmStatsRegion_SeqCheck(self);
+
+    ret = (dm_stats_get_region_precise_timestamps(dms, reg->ob_region_id))
+        ? Py_True : Py_False;
+    Py_INCREF(ret);
+    return ret;
+}
+
+#define DMSTATSREG_nr_areas_gets__doc__                \
 "Return the number of areas contained in this region."
 
-#define DMSTATSREG_present_gets__doc__ \
+#define DMSTATSREG_present_gets__doc__                      \
 "Boolean indicating whether this region is present or not."
+
+#define DMSTATSREG_precise_timestamps_gets__doc__                            \
+"Returns True if the specified region has the precise_timestamps feature\n"  \
+"enabled (i.e. produces nanosecond-precision counter values) or False for\n" \
+"a region using the default milisecond precision."
 
 static PyGetSetDef DmStatsRegion_getsets[] = {
     {"present", DmStatsRegion_present_getter, NULL,
       PyDoc_STR(DMSTATSREG_present_gets__doc__), NULL},
     {"nr_areas", DmStatsRegion_nr_areas_getter, NULL,
       PyDoc_STR(DMSTATSREG_nr_areas_gets__doc__), NULL},
+    {"precise_timestamps", DmStatsRegion_precise_timestamps_getter, NULL,
+      PyDoc_STR(DMSTATSREG_precise_timestamps_gets__doc__), NULL},
     {NULL, NULL}
 };
 
