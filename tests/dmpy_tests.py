@@ -1415,4 +1415,31 @@ class DmpyTests(unittest.TestCase):
         self.assertEqual(dms[0].region_id, 0)
         self.assertEqual(dms[1].region_id, 1)
 
+    def test_dmstatsarea_area_id_attr(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, program_id=self.program_id)
+        _create_stats(self.dmpytest0, program_id=self.program_id, nr_areas=8)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.list()
+        self.assertEqual(dms[0][0].area_id, 0)
+        self.assertEqual(dms[1][0].area_id, 0)
+        self.assertEqual(dms[1][1].area_id, 1)
+        self.assertEqual(dms[1][2].area_id, 2)
+        self.assertEqual(dms[1][3].area_id, 3)
+        self.assertEqual(dms[1][4].area_id, 4)
+        self.assertEqual(dms[1][5].area_id, 5)
+        self.assertEqual(dms[1][6].area_id, 6)
+        self.assertEqual(dms[1][7].area_id, 7)
+        dms.populate()
+        self.assertEqual(dms[0][0].area_id, 0)
+        self.assertEqual(dms[1][0].area_id, 0)
+        self.assertEqual(dms[1][1].area_id, 1)
+        self.assertEqual(dms[1][2].area_id, 2)
+        self.assertEqual(dms[1][3].area_id, 3)
+        self.assertEqual(dms[1][4].area_id, 4)
+        self.assertEqual(dms[1][5].area_id, 5)
+        self.assertEqual(dms[1][6].area_id, 6)
+        self.assertEqual(dms[1][7].area_id, 7)
+
+
 # vim: set et ts=4 sw=4 :
