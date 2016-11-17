@@ -1323,4 +1323,23 @@ class DmpyTests(unittest.TestCase):
         self.assertFalse(dms[0].precise_timestamps)
         self.assertTrue(dms[1].precise_timestamps)
 
+    def test_dmstatsregion_startlen_attr(self):
+        # Assert that the start, and length attributes returned by a
+        # DmStatsRegion object match those used to create it with dmstats.
+        import dmpy as dm
+        _create_stats(self.dmpytest0, program_id=self.program_id)
+        _create_stats(self.dmpytest0, program_id=self.program_id, start=1024,
+                      length=512)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.list()
+        self.assertEqual(dms[0].start, 0)
+        self.assertEqual(dms[0].len, 2048)
+        self.assertEqual(dms[1].start, 1024)
+        self.assertEqual(dms[1].len, 512)
+        dms.populate()
+        self.assertEqual(dms[0].start, 0)
+        self.assertEqual(dms[0].len, 2048)
+        self.assertEqual(dms[1].start, 1024)
+        self.assertEqual(dms[1].len, 512)
+
 # vim: set et ts=4 sw=4 :
