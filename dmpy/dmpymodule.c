@@ -3148,6 +3148,12 @@ static PyMethodDef DmStatsArea_methods[] = {
     {NULL, NULL}
 };
 
+static PyMemberDef DmStatsArea_members[] = {
+    {"area_id", T_LONG, offsetof(DmStatsAreaObject, ob_area_id),
+     READONLY, PyDoc_STR("The area identifier of this area.")},
+    {NULL}
+};
+
 static PyTypeObject DmStatsArea_Type = {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
@@ -3180,7 +3186,7 @@ static PyTypeObject DmStatsArea_Type = {
     0,                          /*tp_iter*/
     0,                          /*tp_iternext*/
     DmStatsArea_methods,        /*tp_methods*/
-    0,                          /*tp_members*/
+    DmStatsArea_members,        /*tp_members*/
     DmStatsArea_getsets,        /*tp_getset*/
     0,                          /*tp_base*/
     0,                          /*tp_dict*/
