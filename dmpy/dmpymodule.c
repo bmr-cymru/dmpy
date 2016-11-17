@@ -1901,6 +1901,8 @@ static PyTypeObject DmTask_Type = {
 typedef struct {
     PyObject_HEAD
     struct dm_stats *ob_dms;
+    PyObject **ob_regions; /* region cache */
+    Py_ssize_t ob_regions_len; /* length of the region cache in regions. */
 } DmStatsObject;
 
 static PyTypeObject DmStats_Type;
@@ -1924,7 +1926,32 @@ DmStats_dealloc(DmStatsObject *self)
     if (self->ob_dms)
         dm_stats_destroy(self->ob_dms);
     self->ob_dms = NULL;
-    PyObject_Del(self);
+    if (self->ob_regions) {
+        PyMem_Free(self->ob_regions);
+        self->ob_regions = NULL;
+        self->ob_regions_len = 0;
+    }
+    Py_TYPE(self)->tp_free(self);
+}
+
+static PyObject *
+DmStats_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    DmStatsObject *obj;
+
+    if (type == &DmStats_Type) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    if (!(obj = (DmStatsObject *) type->tp_alloc(&DmStats_Type, 0)))
+        return NULL;
+
+    obj->ob_dms = NULL;
+    obj->ob_regions = NULL;
+    obj->ob_regions_len = 0;
+
+    return (PyObject *) obj;
 }
 
 #define DMSTATS__init__KWARG_ERR "Please specify one of name=, uuid=, or " \
@@ -1997,6 +2024,98 @@ fail:
     dm_stats_destroy(self->ob_dms);
     return -1;
 }
+
+static int
+DmStats_traverse(DmStatsObject *self, visitproc visit, void *arg)
+{
+    int i;
+
+    if (!self->ob_regions)
+        return 0;
+
+    for (i = 0; i < self->ob_regions_len; i++)
+        Py_VISIT(self->ob_regions[i]);
+    return 0;
+}
+
+static int
+DmStats_clear(DmStatsObject *self)
+{
+    int i;
+
+    if (!self->ob_regions)
+        return 0;
+
+    for (i = 0; i < self->ob_regions_len; i++)
+        Py_CLEAR(self->ob_regions[i]);
+    return 0;
+}
+
+/*
+ * DmStats Sequence Methods.
+ */
+
+Py_ssize_t
+DmStats_len(PyObject *o)
+{
+    DmStatsObject *self = (DmStatsObject *) o;
+
+    if (!DmStatsObject_Check(o))
+        return -1;
+
+    if (!self->ob_dms)
+        return 0;
+
+    return (Py_ssize_t) self->ob_regions_len;
+}
+
+static DmStatsRegionObject *
+newDmStatsRegionObject(PyObject *stats, uint64_t region_id);
+
+PyObject *DmStats_get_item(PyObject *o, Py_ssize_t i)
+{
+    DmStatsObject *self = (DmStatsObject *) o;
+    PyObject *region;
+
+    if (!DmStatsObject_Check(o))
+        return NULL;
+
+    if ((i < 0) || (i >= self->ob_regions_len)) {
+        PyErr_SetString(PyExc_IndexError, "DmStats region_id out of range");
+        return NULL;
+    }
+
+    if (!dm_stats_region_present(self->ob_dms, i)) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    if (!self->ob_regions[i]) {
+cache_new:
+        /* cache miss */
+        region = (PyObject *) newDmStatsRegionObject(o, i);
+        self->ob_regions[i] = PyWeakref_NewRef(region, NULL);
+    } else {
+        region = PyWeakref_GetObject(self->ob_regions[i]);
+        if (region == Py_None) {
+            /* cache hit but referent expired */
+            Py_DECREF(self->ob_regions[i]);
+            self->ob_regions[i] = NULL;
+            goto cache_new;
+        }
+        /* cache hit */
+        Py_INCREF(region);
+    }
+
+    return region;
+}
+
+static PySequenceMethods DmStats_sequence_methods = {
+    DmStats_len,
+    0,
+    0,
+    DmStats_get_item
+};
 
 PyObject *DmStats_bind_devno(DmStatsObject *self, PyObject *args)
 {
@@ -2306,7 +2425,7 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_reserved*/
     0,                          /*tp_repr*/
     0,                          /*tp_as_number*/
-    0,                          /*tp_as_sequence*/
+    &DmStats_sequence_methods,  /*tp_as_sequence*/
     0,                          /*tp_as_mapping*/
     0,                          /*tp_hash*/
     0,                          /*tp_call*/
@@ -2314,10 +2433,10 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
     DMSTATS__doc__,             /*tp_doc*/
-    0,                          /*tp_traverse*/
-    0,                          /*tp_clear*/
+    (traverseproc)DmStats_traverse, /*tp_traverse*/
+    (inquiry)DmStats_clear,     /*tp_clear*/
     0,                          /*tp_richcompare*/
     0,                          /*tp_weaklistoffset*/
     0,                          /*tp_iter*/
@@ -2332,8 +2451,8 @@ static PyTypeObject DmStats_Type = {
     0,                          /*tp_dictoffset*/
     (initproc)DmStats_init,     /*tp_init*/
     0,                          /*tp_alloc*/
-    0,                          /*tp_new*/
-    0,                          /*tp_free*/
+    DmStats_new,                /*tp_new*/
+    PyObject_GC_Del,            /*tp_free*/
     0,                          /*tp_is_gc*/
 };
 
