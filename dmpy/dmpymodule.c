@@ -3080,7 +3080,7 @@ DmStatsArea_ ## name ##_getter(DmStatsAreaObject *self, void *arg)            \
     DmStatsArea_SeqCheck(self);                                               \
                                                                               \
     r = dm_stats_get_area_ ## name(stats->ob_dms, &name,                      \
-                                     self->ob_region_id, self->ob_region_id); \
+                                     self->ob_region_id, self->ob_area_id);   \
     if (!r) {                                                                 \
         PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "      \
                         "state: no region data.");                            \
