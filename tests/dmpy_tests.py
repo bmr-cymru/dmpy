@@ -113,12 +113,17 @@ def _get_driver_version_from_dmsetup():
         return line.split(":")[1].lstrip()
 
 
-def _create_stats(name, program_id="dmstats", nr_areas=1, precise=False):
+def _create_stats(name, program_id="dmstats", nr_areas=1, precise=False,
+                  start=None, length=None):
     args = "--programid %s" % program_id
     if nr_areas > 1:
         args += " --areas %d" % nr_areas
     if precise:
         args += " --precise"
+    if start:
+        args += " --start %d" % start
+    if length:
+        args += " --length %d" % length
 
     r = _get_cmd_output("dmstats create %s %s" % (args, name))
     if r[0]:
