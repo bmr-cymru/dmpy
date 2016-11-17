@@ -2861,6 +2861,21 @@ MkDmStatsRegion_startlen_getter(start)
 MkDmStatsRegion_startlen_getter(len)
 MkDmStatsRegion_startlen_getter(area_len)
 
+static PyObject *
+DmStatsRegion_program_id_getter(PyObject *self, void *arg)
+{
+    DmStatsRegionObject *reg = (DmStatsRegionObject *) self;
+    DmStatsObject *stats = DMSTATS_FROM_REGION(reg);
+    const char *program_id;
+
+    DmStatsRegion_SeqCheck(self);
+
+    program_id = dm_stats_get_region_program_id(stats->ob_dms,
+                                                reg->ob_region_id);
+
+    return Py_BuildValue("z", program_id);
+}
+
 #define DMSTATSREG_nr_areas_gets__doc__                \
 "Return the number of areas contained in this region."
 
@@ -2881,6 +2896,9 @@ MkDmStatsRegion_startlen_getter(area_len)
 #define DMSTATSREG_area_len_gets__doc__ \
 "The lenght of each area contained in this region."
 
+#define DMSTATSREG_program_id_gets__doc__ \
+"The program_id string use to create this region."
+
 static PyGetSetDef DmStatsRegion_getsets[] = {
     {"present", DmStatsRegion_present_getter, NULL,
       PyDoc_STR(DMSTATSREG_present_gets__doc__), NULL},
@@ -2894,6 +2912,8 @@ static PyGetSetDef DmStatsRegion_getsets[] = {
       PyDoc_STR(DMSTATSREG_len_gets__doc__), NULL},
     {"area_len", DmStatsRegion_area_len_getter, NULL,
       PyDoc_STR(DMSTATSREG_area_len_gets__doc__), NULL},
+    {"program_id", DmStatsRegion_program_id_getter, NULL,
+      PyDoc_STR(DMSTATSREG_program_id_gets__doc__), NULL},
     {NULL, NULL}
 };
 
