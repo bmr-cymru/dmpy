@@ -2948,6 +2948,12 @@ static PyGetSetDef DmStatsRegion_getsets[] = {
     {NULL, NULL}
 };
 
+static PyMemberDef DmStatsRegion_members[] = {
+    {"region_id", T_LONG, offsetof(DmStatsRegionObject, ob_region_id),
+     READONLY, PyDoc_STR("The region identifier of this region.")},
+    {NULL}
+};
+
 static PyTypeObject DmStatsRegion_Type = {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
@@ -2980,7 +2986,7 @@ static PyTypeObject DmStatsRegion_Type = {
     0,                          /*tp_iter*/
     0,                          /*tp_iternext*/
     DmStatsRegion_methods,      /*tp_methods*/
-    0,                          /*tp_members*/
+    DmStatsRegion_members,      /*tp_members*/
     DmStatsRegion_getsets,      /*tp_getset*/
     0,                          /*tp_base*/
     0,                          /*tp_dict*/
