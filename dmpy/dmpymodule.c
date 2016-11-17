@@ -2758,9 +2758,16 @@ static PySequenceMethods DmStatsRegion_sequence_methods = {
  * object was created and all operations should raise LookupError.
  */
 static int
-_DmStatsRegion_sequence_check(DmStatsRegionObject *self)
+_DmStatsRegion_sequence_check(PyObject *o)
 {
-    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    DmStatsRegionObject *self = (DmStatsRegionObject *) o;
+    DmStatsObject *stats;
+
+    if (!DmStatsRegionObject_Check(o))
+        return -1;
+
+    stats = DMSTATS_FROM_REGION(self);
+
     if (self->ob_sequence != stats->ob_sequence) {
         PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
                         " changed DmStats object.");
@@ -2768,6 +2775,12 @@ _DmStatsRegion_sequence_check(DmStatsRegionObject *self)
     }
     return 0;
 }
+
+#define DmStatsRegion_SeqCheck(o)                          \
+do {                                                       \
+    if (_DmStatsRegion_sequence_check((PyObject *)(o)))    \
+        return NULL;                                       \
+} while(0);
 
 static PyObject *
 DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
