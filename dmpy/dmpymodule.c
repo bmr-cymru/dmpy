@@ -1914,11 +1914,24 @@ typedef struct {
     PyObject *ob_stats;
     PyObject *ob_weakreflist;
     uint64_t ob_region_id;
+    PyObject **ob_areas;
+    Py_ssize_t ob_areas_len;
 } DmStatsRegionObject;
 
 static PyTypeObject DmStatsRegion_Type;
 
 #define DmStatsRegionObject_Check(v)      (Py_TYPE(v) == &DmStatsRegion_Type)
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *ob_stats;
+    PyObject *ob_weakreflist;
+    uint64_t ob_area_id;
+} DmStatsAreaObject;
+
+static PyTypeObject DmStatsArea_Type;
+
+#define DmStatsAreaObject_Check(v)      (Py_TYPE(v) == &DmStatsArea_Type)
 
 static void
 DmStats_dealloc(DmStatsObject *self)
@@ -2072,7 +2085,43 @@ DmStats_len(PyObject *o)
 static DmStatsRegionObject *
 newDmStatsRegionObject(PyObject *stats, uint64_t region_id);
 
-PyObject *DmStats_get_item(PyObject *o, Py_ssize_t i)
+static void
+_DmStatsRegion_clear_area_cache(DmStatsRegionObject *self)
+{
+    int64_t i;
+
+    if (!self->ob_areas)
+        return;
+
+    /* If an area is in the cache, we are holding a reference
+     * to the Weakref object that represents it.
+     */
+    if (self->ob_areas_len) {
+        for (i = 0; i < self->ob_areas_len; i++)
+            Py_XDECREF(self->ob_areas[i]);
+    }
+    PyMem_Free(self->ob_areas);
+    self->ob_areas = NULL;
+    self->ob_areas_len = 0;
+}
+
+static void
+_DmStatsRegion_set_area_cache(DmStatsRegionObject *self)
+{
+    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    struct dm_stats *dms = stats->ob_dms;
+    uint64_t nr_slots;
+
+    nr_slots = dm_stats_get_region_nr_areas(dms, self->ob_region_id);
+    if (nr_slots) {
+        self->ob_areas = PyMem_Malloc(sizeof(PyObject *) * nr_slots);
+        self->ob_areas_len = nr_slots;
+        memset(self->ob_areas, 0, nr_slots * sizeof(PyObject *));
+    }
+}
+
+static PyObject *
+DmStats_get_item(PyObject *o, Py_ssize_t i)
 {
     DmStatsObject *self = (DmStatsObject *) o;
     PyObject *region;
@@ -2095,6 +2144,7 @@ cache_new:
         /* cache miss */
         region = (PyObject *) newDmStatsRegionObject(o, i);
         self->ob_regions[i] = PyWeakref_NewRef(region, NULL);
+        _DmStatsRegion_set_area_cache((DmStatsRegionObject *) region);
     } else {
         region = PyWeakref_GetObject(self->ob_regions[i]);
         if (region == Py_None) {
@@ -2287,17 +2337,28 @@ PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *
 void
 _DmStats_clear_region_cache(DmStatsObject *self)
 {
+    PyObject *region;
     int64_t i;
 
     if (!self->ob_regions)
         return;
 
     /* If a region is in the cache, we are holding a reference
-     * to the Weakref object that represents it.
+     * to the Weakref object that represents it: if the reference is
+     * still alive, retrive the object and clear its area cache.
      */
     if (self->ob_regions_len) {
-        for (i = 0; i < self->ob_regions_len; i++)
+        for (i = 0; i < self->ob_regions_len; i++) {
+            if (self->ob_regions[i]) {
+                region = PyWeakref_GetObject(self->ob_regions[i]);
+                if (region == Py_None)
+                    continue;
+                Py_INCREF(region);
+                _DmStatsRegion_clear_area_cache((DmStatsRegionObject *) region);
+                Py_DECREF(region);
+            }
             Py_XDECREF(self->ob_regions[i]);
+        }
     }
     PyMem_Free(self->ob_regions);
     self->ob_regions = NULL;
@@ -2628,8 +2689,58 @@ DmStatsRegion_len(PyObject *o)
     return (Py_ssize_t) dm_stats_get_region_nr_areas(dms, self->ob_region_id);
 }
 
+static DmStatsAreaObject *
+newDmStatsAreaObject(PyObject *stats, uint64_t area_id);
+
+PyObject *DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
+{
+    DmStatsRegionObject *self = (DmStatsRegionObject *) o;
+    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    PyObject *area;
+
+    if (!DmStatsRegionObject_Check(o))
+        return NULL;
+
+    if ((j < 0) || (j >= self->ob_areas_len)) {
+        PyErr_SetString(PyExc_IndexError, "DmStats area_id out of range");
+        return NULL;
+    }
+
+    /* This return is currently unreachable since a not-present region_id
+     * returns the None type for a lookup in the containing DmStats. If
+     * that is later changed to return a singleton "null region", then
+     * the following presence check ensures correct behaviour.
+     */
+    if (!dm_stats_region_present(stats->ob_dms, self->ob_region_id)) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    if (!self->ob_areas[j]) {
+cache_new:
+        /* cache miss */
+        area = (PyObject *) newDmStatsAreaObject((PyObject *) stats, j);
+        self->ob_areas[j] = PyWeakref_NewRef(area, NULL);
+    } else {
+        area = PyWeakref_GetObject(self->ob_areas[j]);
+        if (area == Py_None) {
+            /* cache hit but referent expired */
+            Py_DECREF(self->ob_areas[j]);
+            self->ob_areas[j] = NULL;
+            goto cache_new;
+        }
+        /* cache hit */
+        Py_INCREF(area);
+    }
+
+    return area;
+}
+
 static PySequenceMethods DmStatsRegion_sequence_methods = {
     DmStatsRegion_len,
+    0,
+    0,
+    DmStatsRegion_get_item
 };
 
 
@@ -2698,6 +2809,104 @@ static PyTypeObject DmStatsRegion_Type = {
     0,                          /*tp_descr_set*/
     0,                          /*tp_dictoffset*/
     (initproc)DmStatsRegion_init, /*tp_init*/
+    0,                          /*tp_alloc*/
+    0,                          /*tp_new*/
+    0,                          /*tp_free*/
+    0,                          /*tp_is_gc*/
+};
+
+
+static void
+DmStatsArea_dealloc(DmStatsAreaObject *self)
+{
+    /* Notify our parent that we are departing. */
+    if (self->ob_weakreflist)
+        PyObject_ClearWeakRefs((PyObject *) self);
+
+    /* release our reference on the parent DmStats. */
+    Py_DECREF(self->ob_stats);
+    return;
+}
+
+static DmStatsAreaObject *
+newDmStatsAreaObject(PyObject *stats, uint64_t area_id)
+{
+    DmStatsAreaObject *area;
+    area = PyObject_GC_New(DmStatsAreaObject, &DmStatsArea_Type);
+    area->ob_area_id = area_id;
+    area->ob_weakreflist = NULL;
+    area->ob_stats = stats;
+
+    /* We keep a reference on the parent DmStats to prevent it (and its handle)
+     * from being deallocated.
+     */
+    Py_INCREF(stats);
+    return area;
+}
+
+static int
+DmStatsArea_init(DmStatsAreaObject *self, PyObject *args, PyObject *kwds)
+{
+    uint64_t area_id;
+    if (!PyArg_ParseTuple(args, "i:__init__", &area_id))
+        return -1;
+    self->ob_area_id = area_id;
+    return 0;
+}
+
+#define DMSTATSAREA___doc__ \
+""
+
+#define DMSTATSAREA__doc__ \
+"Base class representing one area of a device-mapper statistics handle,\n"  \
+"and the counter data contained within it."
+
+static PyMethodDef DmStatsArea_methods[] = {
+//    {"nr_areas", (PyCFunction)DmStatsArea_nr_areas, METH_NOARGS,
+//        PyDoc_STR(DMSTATSREG_nr_areas__doc__)},
+    {NULL, NULL}
+};
+
+static PyTypeObject DmStatsArea_Type = {
+    /* The ob_type field must be initialized in the module init function
+     * to be portable to Windows without using C++. */
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "dmpy.DmStatsArea",             /*tp_name*/
+    sizeof(DmStatsAreaObject),      /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    /* methods */
+    (destructor)DmStatsArea_dealloc,
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_reserved*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    DMSTATSAREA__doc__,         /*tp_doc*/
+    0,                          /*tp_traverse*/
+    0,                          /*tp_clear*/
+    0,                          /*tp_richcompare*/
+    offsetof(DmStatsAreaObject, ob_weakreflist), /*tp_weaklistoffset*/
+    0,                          /*tp_iter*/
+    0,                          /*tp_iternext*/
+    DmStatsArea_methods,        /*tp_methods*/
+    0,                          /*tp_members*/
+    0,                          /*tp_getset*/
+    0,                          /*tp_base*/
+    0,                          /*tp_dict*/
+    0,                          /*tp_descr_get*/
+    0,                          /*tp_descr_set*/
+    0,                          /*tp_dictoffset*/
+    (initproc)DmStatsArea_init, /*tp_init*/
     0,                          /*tp_alloc*/
     0,                          /*tp_new*/
     0,                          /*tp_free*/
