@@ -3116,6 +3116,12 @@ DmStatsArea_len_getter(DmStatsAreaObject *self, void *arg)
     return Py_BuildValue("l", len);
 }
 
+static PyObject *
+DmStatsArea_region_getter(DmStatsAreaObject *self, void *arg)
+{
+    return DmStats_get_item(self->ob_stats, self->ob_region_id);
+}
+
 #define DMSTATSAREA_start_gets__doc__ \
 "The starting sector of this area, relative to the containing device."
 
@@ -3125,6 +3131,9 @@ DmStatsArea_len_getter(DmStatsAreaObject *self, void *arg)
 #define DMSTATSAREA_len_gets__doc__ \
 "The length of this area in sectors."
 
+#define DMSTATSAREA_region_gets__doc__ \
+"The region that contains this area."
+
 static PyGetSetDef DmStatsArea_getsets[] = {
     {"start", (getter)DmStatsArea_start_getter, NULL,
       PyDoc_STR(DMSTATSAREA_start_gets__doc__), NULL},
@@ -3132,6 +3141,8 @@ static PyGetSetDef DmStatsArea_getsets[] = {
       PyDoc_STR(DMSTATSAREA_offset_gets__doc__), NULL},
     {"len", (getter)DmStatsArea_len_getter, NULL,
       PyDoc_STR(DMSTATSAREA_len_gets__doc__), NULL},
+    {"region", (getter)DmStatsArea_region_getter, NULL,
+      PyDoc_STR(DMSTATSAREA_region_gets__doc__), NULL},
     {NULL, NULL}
 };
 
