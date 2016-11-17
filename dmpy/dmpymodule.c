@@ -3069,6 +3069,66 @@ do {                                                     \
         return NULL;                                     \
 } while(0);
 
+#define MkDmStatsArea_startlen_getter(name)                                   \
+static PyObject *                                                             \
+DmStatsArea_ ## name ##_getter(DmStatsAreaObject *self, void *arg)            \
+{                                                                             \
+    DmStatsObject *stats = DMSTATS_FROM_AREA(self);                           \
+    uint64_t name;                                                            \
+    int r;                                                                    \
+                                                                              \
+    DmStatsArea_SeqCheck(self);                                               \
+                                                                              \
+    r = dm_stats_get_area_ ## name(stats->ob_dms, &name,                      \
+                                     self->ob_region_id, self->ob_region_id); \
+    if (!r) {                                                                 \
+        PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "      \
+                        "state: no region data.");                            \
+        return NULL;                                                          \
+    }                                                                         \
+    return Py_BuildValue("l", name);                                          \
+}
+
+MkDmStatsArea_startlen_getter(start)
+MkDmStatsArea_startlen_getter(offset)
+
+static PyObject *
+DmStatsArea_len_getter(DmStatsAreaObject *self, void *arg)
+{
+    DmStatsObject *stats = DMSTATS_FROM_AREA(self);
+    uint64_t len;
+    int r;
+
+    DmStatsArea_SeqCheck(self);
+
+    r = dm_stats_get_region_area_len(stats->ob_dms, &len, self->ob_region_id);
+    if (!r) {
+        PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "
+                        "state: no region data.");
+        return NULL;
+    }
+    return Py_BuildValue("l", len);
+}
+
+#define DMSTATSAREA_start_gets__doc__ \
+"The starting sector of this area, relative to the containing device."
+
+#define DMSTATSAREA_offset_gets__doc__ \
+"The offset of this area, within the containing region, in sectors."
+
+#define DMSTATSAREA_len_gets__doc__ \
+"The length of this area in sectors."
+
+static PyGetSetDef DmStatsArea_getsets[] = {
+    {"start", (getter)DmStatsArea_start_getter, NULL,
+      PyDoc_STR(DMSTATSAREA_start_gets__doc__), NULL},
+    {"offset", (getter)DmStatsArea_offset_getter, NULL,
+      PyDoc_STR(DMSTATSAREA_offset_gets__doc__), NULL},
+    {"len", (getter)DmStatsArea_len_getter, NULL,
+      PyDoc_STR(DMSTATSAREA_len_gets__doc__), NULL},
+    {NULL, NULL}
+};
+
  #define DMSTATSAREA___doc__ \
 ""
 
@@ -3115,7 +3175,7 @@ static PyTypeObject DmStatsArea_Type = {
     0,                          /*tp_iternext*/
     DmStatsArea_methods,        /*tp_methods*/
     0,                          /*tp_members*/
-    0,                          /*tp_getset*/
+    DmStatsArea_getsets,        /*tp_getset*/
     0,                          /*tp_base*/
     0,                          /*tp_dict*/
     0,                          /*tp_descr_get*/
