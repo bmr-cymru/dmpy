@@ -2724,6 +2724,9 @@ DmStatsRegion_len(PyObject *o)
     if (!DmStatsRegionObject_Check(o))
         return -1;
 
+    if (_DmStatsRegion_sequence_check(o))
+        return -1;
+
     dms = DMS_FROM_REGION(self);
     if (!dms)
         return 0;
@@ -2742,6 +2745,8 @@ PyObject *DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
 
     if (!DmStatsRegionObject_Check(o))
         return NULL;
+
+    DmStatsRegion_SeqCheck(o);
 
     if ((j < 0) || (j >= self->ob_areas_len)) {
         PyErr_SetString(PyExc_IndexError, "DmStats area_id out of range");
