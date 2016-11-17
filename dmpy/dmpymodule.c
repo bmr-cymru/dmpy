@@ -2785,11 +2785,10 @@ do {                                                       \
 static PyObject *
 DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
 {
-    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    DmStatsObject *stats = DMSTATS_FROM_REGION(self);
     uint64_t nr_areas;
 
-    if (_DmStatsRegion_sequence_check(self))
-        return NULL;
+    DmStatsRegion_SeqCheck(self);
 
     nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, self->ob_region_id);
     return Py_BuildValue("i", nr_areas);
