@@ -1933,7 +1933,9 @@ static PyTypeObject DmStatsRegion_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *ob_stats;
+    uint64_t ob_sequence;
     PyObject *ob_weakreflist;
+    uint64_t ob_region_id;
     uint64_t ob_area_id;
 } DmStatsAreaObject;
 
@@ -2735,12 +2737,13 @@ DmStatsRegion_len(PyObject *o)
 }
 
 static DmStatsAreaObject *
-newDmStatsAreaObject(PyObject *stats, uint64_t area_id);
+newDmStatsAreaObject(PyObject *stats, uint64_t region_id, uint64_t area_id);
 
 PyObject *DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
 {
     DmStatsRegionObject *self = (DmStatsRegionObject *) o;
     DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
+    uint64_t i = self->ob_region_id;
     PyObject *area;
 
     if (!DmStatsRegionObject_Check(o))
@@ -2766,7 +2769,7 @@ PyObject *DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
     if (!self->ob_areas[j]) {
 cache_new:
         /* cache miss */
-        area = (PyObject *) newDmStatsAreaObject((PyObject *) stats, j);
+        area = (PyObject *) newDmStatsAreaObject((PyObject *) stats, i, j);
         self->ob_areas[j] = PyWeakref_NewRef(area, NULL);
     } else {
         area = PyWeakref_GetObject(self->ob_areas[j]);
@@ -3005,13 +3008,15 @@ DmStatsArea_dealloc(DmStatsAreaObject *self)
 }
 
 static DmStatsAreaObject *
-newDmStatsAreaObject(PyObject *stats, uint64_t area_id)
+newDmStatsAreaObject(PyObject *stats, uint64_t region_id, uint64_t area_id)
 {
     DmStatsAreaObject *area;
     area = PyObject_GC_New(DmStatsAreaObject, &DmStatsArea_Type);
+    area->ob_region_id = region_id;
     area->ob_area_id = area_id;
     area->ob_weakreflist = NULL;
     area->ob_stats = stats;
+    area->ob_sequence = ((DmStatsObject *) stats)->ob_sequence;
 
     /* We keep a reference on the parent DmStats to prevent it (and its handle)
      * from being deallocated.
