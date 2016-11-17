@@ -2782,21 +2782,6 @@ do {                                                       \
         return NULL;                                       \
 } while(0);
 
-static PyObject *
-DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
-{
-    DmStatsObject *stats = DMSTATS_FROM_REGION(self);
-    uint64_t nr_areas;
-
-    DmStatsRegion_SeqCheck(self);
-
-    nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, self->ob_region_id);
-    return Py_BuildValue("i", nr_areas);
-}
-
-#define DMSTATSREG_nr_areas__doc__ \
-"Return the number of areas contained in this region."
-
 #define DMSTATSREG___doc__ \
 ""
 
@@ -2805,10 +2790,21 @@ DmStatsRegion_nr_areas(DmStatsRegionObject *self, PyObject *args)
 "including any areas and counters contained within it.\n\n"                 \
 
 static PyMethodDef DmStatsRegion_methods[] = {
-    {"nr_areas", (PyCFunction)DmStatsRegion_nr_areas, METH_NOARGS,
-        PyDoc_STR(DMSTATSREG_nr_areas__doc__)},
     {NULL, NULL}
 };
+
+static PyObject *
+DmStatsRegion_nr_areas_getter(PyObject *self, void *arg)
+{
+    DmStatsRegionObject *reg = (DmStatsRegionObject *) self;
+    DmStatsObject *stats = DMSTATS_FROM_REGION(reg);
+    uint64_t nr_areas;
+
+    DmStatsRegion_SeqCheck(self);
+
+    nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, reg->ob_region_id);
+    return Py_BuildValue("i", nr_areas);
+}
 
 static PyObject *
 DmStatsRegion_present_getter(PyObject *self, void *arg)
@@ -2825,12 +2821,17 @@ DmStatsRegion_present_getter(PyObject *self, void *arg)
     return ret;
 }
 
-#define DMSTATSREG_present_getsets__doc__ \
+#define DMSTATSREG_nr_areas_gets__doc__ \
+"Return the number of areas contained in this region."
+
+#define DMSTATSREG_present_gets__doc__ \
 "Boolean indicating whether this region is present or not."
 
 static PyGetSetDef DmStatsRegion_getsets[] = {
     {"present", DmStatsRegion_present_getter, NULL,
-      PyDoc_STR(DMSTATSREG_present_getsets__doc__), NULL},
+      PyDoc_STR(DMSTATSREG_present_gets__doc__), NULL},
+    {"nr_areas", DmStatsRegion_nr_areas_getter, NULL,
+      PyDoc_STR(DMSTATSREG_nr_areas_gets__doc__), NULL},
     {NULL, NULL}
 };
 
