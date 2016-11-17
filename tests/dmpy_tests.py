@@ -1203,4 +1203,50 @@ class DmpyTests(unittest.TestCase):
         self.assertTrue(dms.list())
         self.assertEqual(len(dms), 1)
 
+    def test_stats_populate_empty(self):
+        # Assert that populating an empty device yields an empty
+        # DmStats object, and that the correct number of regions is
+        # returned when populating a device with regions present.
+        import dmpy as dm
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        with self.assertRaises(OSError) as cm:
+            dms.populate()
+        self.assertEqual(len(dms), 0)
+
+    def test_stats_populate_unlisted_raises(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        # Attempting to populate a single region in an empty dm_stats handle
+        # is an error (since the region tables have not been dimensioned):
+        # a single-region populate() without a prior list() should raise an
+        # OSError exception.
+        with self.assertRaises(OSError) as cm:
+            dms.populate(region_id=0)
+        self.assertEqual(len(dms), 0)
+
+    def test_stats_populate_bogus_raises(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        self.assertTrue(dms.list())
+        with self.assertRaises(OSError) as cm:
+            dms.populate(region_id=1)  # dms has only region_id=0
+        self.assertEqual(len(dms), 0)
+
+    def test_stats_populate_one_region(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        self.assertTrue(dms.list())
+        self.assertTrue(dms.populate(region_id=0))
+        self.assertEqual(len(dms), 1)
+
+    def test_stats_populate_all_regions(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, nr_areas=1, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        self.assertTrue(dms.populate())
+        self.assertEqual(len(dms), 1)
+
 # vim: set et ts=4 sw=4 :
