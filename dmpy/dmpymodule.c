@@ -2681,6 +2681,40 @@ DmStatsRegion_clear(DmStatsRegionObject *self)
     return 0;
 }
 
+/* Check the sequence number for this DmStatsRegion against its parent.
+ * The ob_sequence value stored in DmStats is initialised to zero, and
+ * incremented on each operation that invalidates the handle's tables
+ * (bind, list, populate).
+ *
+ * If the sequence number we are holding, and the one stored in the
+ * parent do not match, the handle has been invalidated since this
+ * object was created and all operations should raise LookupError.
+ */
+static int
+_DmStatsRegion_sequence_check(PyObject *o)
+{
+    DmStatsRegionObject *self = (DmStatsRegionObject *) o;
+    DmStatsObject *stats;
+
+    if (!DmStatsRegionObject_Check(o))
+        return -1;
+
+    stats = DMSTATS_FROM_REGION(self);
+
+    if (self->ob_sequence != stats->ob_sequence) {
+        PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
+                        " changed DmStats object.");
+        return -1;
+    }
+    return 0;
+}
+
+#define DmStatsRegion_SeqCheck(o)                          \
+do {                                                       \
+    if (_DmStatsRegion_sequence_check((PyObject *)(o)))    \
+        return NULL;                                       \
+} while(0);
+
 Py_ssize_t
 DmStatsRegion_len(PyObject *o)
 {
@@ -2750,40 +2784,6 @@ static PySequenceMethods DmStatsRegion_sequence_methods = {
     0,
     DmStatsRegion_get_item
 };
-
-/* Check the sequence number for this DmStatsRegion against its parent.
- * The ob_sequence value stored in DmStats is initialised to zero, and
- * incremented on each operation that invalidates the handle's tables
- * (bind, list, populate).
- *
- * If the sequence number we are holding, and the one stored in the
- * parent do not match, the handle has been invalidated since this
- * object was created and all operations should raise LookupError.
- */
-static int
-_DmStatsRegion_sequence_check(PyObject *o)
-{
-    DmStatsRegionObject *self = (DmStatsRegionObject *) o;
-    DmStatsObject *stats;
-
-    if (!DmStatsRegionObject_Check(o))
-        return -1;
-
-    stats = DMSTATS_FROM_REGION(self);
-
-    if (self->ob_sequence != stats->ob_sequence) {
-        PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
-                        " changed DmStats object.");
-        return -1;
-    }
-    return 0;
-}
-
-#define DmStatsRegion_SeqCheck(o)                          \
-do {                                                       \
-    if (_DmStatsRegion_sequence_check((PyObject *)(o)))    \
-        return NULL;                                       \
-} while(0);
 
 #define DMSTATSREG___doc__ \
 ""
