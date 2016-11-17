@@ -113,10 +113,12 @@ def _get_driver_version_from_dmsetup():
         return line.split(":")[1].lstrip()
 
 
-def _create_stats(name, nr_areas=1, program_id="dmstats"):
+def _create_stats(name, program_id="dmstats", nr_areas=1, precise=False):
     args = "--programid %s" % program_id
     if nr_areas > 1:
         args += " --areas %d" % nr_areas
+    if precise:
+        args += " --precise"
 
     r = _get_cmd_output("dmstats create %s %s" % (args, name))
     if r[0]:
@@ -1301,5 +1303,19 @@ class DmpyTests(unittest.TestCase):
         dms.list()
         with self.assertRaises(LookupError) as cm:
             region.nr_areas
+
+    def test_dmstatsregion_precise_attr(self):
+        # Assert that region precise_timestamps attributes have the expected
+        # value following a list() or populate() operation.
+        import dmpy as dm
+        _create_stats(self.dmpytest0, program_id=self.program_id)
+        _create_stats(self.dmpytest0, precise=True, program_id=self.program_id)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.list()
+        self.assertFalse(dms[0].precise_timestamps)
+        self.assertTrue(dms[1].precise_timestamps)
+        dms.populate()
+        self.assertFalse(dms[0].precise_timestamps)
+        self.assertTrue(dms[1].precise_timestamps)
 
 # vim: set et ts=4 sw=4 :
