@@ -1377,4 +1377,30 @@ class DmpyTests(unittest.TestCase):
         dms.populate(program_id=dm.STATS_ALL_PROGRAMS)
         self.assertEqual(dms[0].aux_data, "quxfoo")
 
+    def test_dmstatsarea_startofflen_attr(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, program_id=self.program_id)
+        _create_stats(self.dmpytest0, program_id=self.program_id, nr_areas=8)
+        dms = dm.DmStats(self.program_id, name=self.dmpytest0)
+        dms.list()
+        self.assertEqual(dms[0][0].start, 0)
+        self.assertEqual(dms[0][0].len, 2048)
+        self.assertEqual(dms[0][0].offset, 0)
+        self.assertEqual(dms[1][0].start, 0)
+        self.assertEqual(dms[1][0].len, 256)
+        self.assertEqual(dms[1][0].offset, 0)
+        self.assertEqual(dms[1][1].start, 256)
+        self.assertEqual(dms[1][1].len, 256)
+        self.assertEqual(dms[1][1].offset, 256)
+        dms.populate()
+        self.assertEqual(dms[0][0].start, 0)
+        self.assertEqual(dms[0][0].len, 2048)
+        self.assertEqual(dms[0][0].offset, 0)
+        self.assertEqual(dms[1][0].start, 0)
+        self.assertEqual(dms[1][0].len, 256)
+        self.assertEqual(dms[1][0].offset, 0)
+        self.assertEqual(dms[1][1].start, 256)
+        self.assertEqual(dms[1][1].len, 256)
+        self.assertEqual(dms[1][1].offset, 256)
+
 # vim: set et ts=4 sw=4 :
