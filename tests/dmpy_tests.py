@@ -1368,4 +1368,13 @@ class DmpyTests(unittest.TestCase):
         self.assertEqual(dms[0].program_id, "qux")
         self.assertEqual(dms[1].program_id, self.program_id)
 
+    def test_dmstatsregion_aux_data_attr(self):
+        import dmpy as dm
+        _create_stats(self.dmpytest0, aux_data="quxfoo")
+        dms = dm.DmStats(dm.STATS_ALL_PROGRAMS, name=self.dmpytest0)
+        dms.list(dm.STATS_ALL_PROGRAMS)
+        self.assertEqual(dms[0].aux_data, "quxfoo")
+        dms.populate(program_id=dm.STATS_ALL_PROGRAMS)
+        self.assertEqual(dms[0].aux_data, "quxfoo")
+
 # vim: set et ts=4 sw=4 :
