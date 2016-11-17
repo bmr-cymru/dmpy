@@ -1927,9 +1927,6 @@ static PyTypeObject DmStatsRegion_Type;
 #define DMSTATS_FROM_REGION(r) ((DmStatsObject *)((r)->ob_stats))
 #define DMS_FROM_REGION(r) (DMSTATS_FROM_REGION((r))->ob_dms)
 
-#define DMSTATS_FROM_AREA(a) ((DmStatsObject *)((a)->ob_stats))
-#define DMS_FROM_AREA(a) (DMSTATS_FROM_AREA((a))->ob_dms)
-
 typedef struct {
     PyObject_HEAD
     PyObject *ob_stats;
@@ -1942,6 +1939,9 @@ typedef struct {
 static PyTypeObject DmStatsArea_Type;
 
 #define DmStatsAreaObject_Check(v)      (Py_TYPE(v) == &DmStatsArea_Type)
+
+#define DMSTATS_FROM_AREA(a) ((DmStatsObject *)((a)->ob_stats))
+#define DMS_FROM_AREA(a) (DMSTATS_FROM_AREA((a))->ob_dms)
 
 static void
 DmStats_dealloc(DmStatsObject *self)
