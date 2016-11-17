@@ -3035,7 +3035,41 @@ DmStatsArea_init(DmStatsAreaObject *self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
-#define DMSTATSAREA___doc__ \
+/* Check the sequence number for this DmStatsArea against its parent.
+ * The ob_sequence value stored in DmStats is initialised to zero, and
+ * incremented on each operation that invalidates the handle's tables
+ * (bind, list, populate).
+ *
+ * If the sequence number we are holding, and the one stored in the
+ * parent do not match, the handle has been invalidated since this
+ * object was created and all operations should raise LookupError.
+ */
+static int
+_DmStatsArea_sequence_check(PyObject *o)
+{
+    DmStatsAreaObject *self = (DmStatsAreaObject *) o;
+    DmStatsObject *stats;
+
+    if (!DmStatsAreaObject_Check(o))
+        return -1;
+
+    stats = DMSTATS_FROM_AREA(self);
+
+    if (self->ob_sequence != stats->ob_sequence) {
+        PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
+                        " changed DmStats object.");
+        return -1;
+    }
+    return 0;
+}
+
+#define DmStatsArea_SeqCheck(o)                          \
+do {                                                     \
+    if (_DmStatsArea_sequence_check((PyObject *)(o)))    \
+        return NULL;                                     \
+} while(0);
+
+ #define DMSTATSAREA___doc__ \
 ""
 
 #define DMSTATSAREA__doc__ \
