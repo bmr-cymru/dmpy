@@ -3128,7 +3128,7 @@ DmStatsArea_counter_getter(DmStatsAreaObject *self, void *arg)
     dm_stats_counter_t counter = (dm_stats_counter_t) arg;
     struct dm_stats *dms = DMS_FROM_AREA(self);
 
-    if (counter >= DM_STATS_NR_COUNTERS) {
+    if (counter < 0 || counter >= DM_STATS_NR_COUNTERS) {
         PyErr_SetString(PyExc_AttributeError, "Invalid counter attribute.");
         return NULL;
     }
@@ -3168,31 +3168,31 @@ static PyGetSetDef DmStatsArea_getsets[] = {
     {"region", (getter)DmStatsArea_region_getter, NULL,
       PyDoc_STR(DMSTATSAREA_region_gets__doc__), NULL},
     {"READS_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(0), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(0)},
     {"READS_MERGED_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(1), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(1)},
     {"READ_SECTORS_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(2), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(2)},
     {"READ_NSECS", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(3), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(3)},
     {"WRITES_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(4), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(4)},
     {"WRITES_MERGED_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(5), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(5)},
     {"WRITE_SECTORS_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(6), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(6)},
     {"WRITE_NSECS", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(7), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(7)},
     {"IO_IN_PROGRESS_COUNT", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(8), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(8)},
     {"IO_NSECS", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(9), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(9)},
     {"WEIGHTED_IO_NSECS", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(10), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(10)},
     {"TOTAL_READ_NSECS", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(11), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(11)},
     {"TOTAL_WRITE_NSECS", (getter)DmStatsArea_counter_getter,
-      COUNTER_AS_VOID(12), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+      NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(12)},
     {NULL, NULL}
 };
 #undef COUNTER_AS_VOID
