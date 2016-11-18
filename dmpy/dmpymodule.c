@@ -3122,6 +3122,22 @@ DmStatsArea_region_getter(DmStatsAreaObject *self, void *arg)
     return DmStats_get_item(self->ob_stats, self->ob_region_id);
 }
 
+static PyObject *
+DmStatsArea_counter_getter(DmStatsAreaObject *self, void *arg)
+{
+    dm_stats_counter_t counter = (dm_stats_counter_t) arg;
+    struct dm_stats *dms = DMS_FROM_AREA(self);
+
+    if (counter >= DM_STATS_NR_COUNTERS) {
+        PyErr_SetString(PyExc_AttributeError, "Invalid counter attribute.");
+        return NULL;
+    }
+
+    return Py_BuildValue("l", dm_stats_get_counter(dms, counter,
+                                                   self->ob_region_id,
+                                                   self->ob_area_id));
+}
+
 #define DMSTATSAREA_start_gets__doc__ \
 "The starting sector of this area, relative to the containing device."
 
@@ -3134,6 +3150,14 @@ DmStatsArea_region_getter(DmStatsAreaObject *self, void *arg)
 #define DMSTATSAREA_region_gets__doc__ \
 "The region that contains this area."
 
+#define DMSTATSAREA_counter_gets__doc__ \
+"The value of the specified counter for this area. The available\n"      \
+"counter attributes are:\n\n"                                            \
+"READS_COUNT, READS_MERGED_COUNT, READ_SECTORS_COUNT, READ_NSECS,\n"     \
+"WRITES_COUNT, WRITES_MERGED_COUNT, WRITE_SECTORS_COUNT, WRITE_NSECS,\n" \
+"IO_IN_PROGRESS_COUNT, IO_NSECS, WEIGHTED_IO_NSECS, TOTAL_READ_NSECS."
+
+#define COUNTER_AS_VOID(c) ((void *)(c))
 static PyGetSetDef DmStatsArea_getsets[] = {
     {"start", (getter)DmStatsArea_start_getter, NULL,
       PyDoc_STR(DMSTATSAREA_start_gets__doc__), NULL},
@@ -3143,54 +3167,35 @@ static PyGetSetDef DmStatsArea_getsets[] = {
       PyDoc_STR(DMSTATSAREA_len_gets__doc__), NULL},
     {"region", (getter)DmStatsArea_region_getter, NULL,
       PyDoc_STR(DMSTATSAREA_region_gets__doc__), NULL},
+    {"READS_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(0), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"READS_MERGED_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(1), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"READ_SECTORS_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(2), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"READ_NSECS", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(3), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"WRITES_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(4), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"WRITES_MERGED_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(5), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"WRITE_SECTORS_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(6), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"WRITE_NSECS", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(7), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"IO_IN_PROGRESS_COUNT", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(8), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"IO_NSECS", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(9), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"WEIGHTED_IO_NSECS", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(10), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"TOTAL_READ_NSECS", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(11), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
+    {"TOTAL_WRITE_NSECS", (getter)DmStatsArea_counter_getter,
+      COUNTER_AS_VOID(12), PyDoc_STR(DMSTATSAREA_counter_gets__doc__), NULL},
     {NULL, NULL}
 };
-
-static const char * const _dmstats_counter_names[] = {
-    "READS_COUNT",
-    "READS_MERGED_COUNT",
-    "READ_SECTORS_COUNT",
-    "READ_NSECS",
-    "WRITES_COUNT",
-    "WRITES_MERGED_COUNT",
-    "WRITE_SECTORS_COUNT",
-    "WRITE_NSECS",
-    "IO_IN_PROGRESS_COUNT",
-    "IO_NSECS",
-    "WEIGHTED_IO_NSECS",
-    "TOTAL_READ_NSECS",
-    "TOTAL_WRITE_NSECS",
-    "NR_COUNTERS"
-};
-
-static PyObject *
-DmStatsArea_GetAttr(PyObject *o, PyObject *name)
-{
-    DmStatsAreaObject *self = (DmStatsAreaObject *) o;
-    PyObject *args;
-    struct dm_stats *dms = DMS_FROM_AREA(self);
-    char *attr_name;
-    int i, r;
-
-    if (!(args = Py_BuildValue("(O)", name)))
-        return NULL;
-
-    r = PyArg_ParseTuple(args, "s", &attr_name);
-    Py_DECREF(args);
-    if (!r)
-        return NULL;
-
-    for (i = 0; i < DM_STATS_NR_COUNTERS; i++)
-        if (!strncmp(_dmstats_counter_names[i], attr_name, 20))
-            break;
-
-    if (i == DM_STATS_NR_COUNTERS)
-        return PyObject_GenericGetAttr(o, name);
-
-    return Py_BuildValue("l", dm_stats_get_counter(dms, (dm_stats_counter_t) i,
-                                                   self->ob_region_id,
-                                                   self->ob_area_id));
-}
+#undef COUNTER_AS_VOID
 
 #define DMSTATSAREA___doc__ \
 ""
@@ -3231,7 +3236,7 @@ static PyTypeObject DmStatsArea_Type = {
     0,                          /*tp_hash*/
     0,                          /*tp_call*/
     0,                          /*tp_str*/
-    DmStatsArea_GetAttr,        /*tp_getattro*/
+    0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
