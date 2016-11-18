@@ -3138,6 +3138,28 @@ DmStatsArea_counter_getter(DmStatsAreaObject *self, void *arg)
                                                    self->ob_area_id));
 }
 
+static PyObject *
+DmStatsArea_metric_getter(DmStatsAreaObject *self, void *arg)
+{
+    dm_stats_metric_t metric = (dm_stats_counter_t) arg;
+    struct dm_stats *dms = DMS_FROM_AREA(self);
+    double value;
+
+    if (metric < 0 || metric >= DM_STATS_NR_METRICS) {
+        PyErr_SetString(PyExc_AttributeError, "Invalid metric attribute.");
+        return NULL;
+    }
+
+    if (!dm_stats_get_metric(dms, metric,
+                             self->ob_region_id, self->ob_area_id, &value)) {
+        PyErr_SetString(PyExc_OSError, "Failed to get metric data from "
+                        "device-mapper.");
+        return NULL;
+    }
+
+    return Py_BuildValue("d", value);
+}
+
 #define DMSTATSAREA_start_gets__doc__ \
 "The starting sector of this area, relative to the containing device."
 
@@ -3157,7 +3179,12 @@ DmStatsArea_counter_getter(DmStatsAreaObject *self, void *arg)
 "WRITES_COUNT, WRITES_MERGED_COUNT, WRITE_SECTORS_COUNT, WRITE_NSECS,\n" \
 "IO_IN_PROGRESS_COUNT, IO_NSECS, WEIGHTED_IO_NSECS, TOTAL_READ_NSECS."
 
+#define DMSTATSAREA_metric_gets__doc__ \
+"The value of the specified metric for this area. The available\n"       \
+"metric attributes are:\n\n"                                             \
+
 #define COUNTER_AS_VOID(c) ((void *)(c))
+#define METRIC_AS_VOID(c) ((void *)(c))
 static PyGetSetDef DmStatsArea_getsets[] = {
     {"start", (getter)DmStatsArea_start_getter, NULL,
       PyDoc_STR(DMSTATSAREA_start_gets__doc__), NULL},
@@ -3193,9 +3220,38 @@ static PyGetSetDef DmStatsArea_getsets[] = {
       NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(11)},
     {"TOTAL_WRITE_NSECS", (getter)DmStatsArea_counter_getter,
       NULL, PyDoc_STR(DMSTATSAREA_counter_gets__doc__), COUNTER_AS_VOID(12)},
+    {"RD_MERGES_PER_SEC", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(0)},
+    {"WR_MERGES_PER_SEC", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(1)},
+    {"READS_PER_SEC", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(2)},
+    {"WRITES_PER_SEC", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(3)},
+    {"READ_SECTORS_PER_SEC", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(4)},
+    {"WRITE_SECTORS_PER_SEC", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(5)},
+    {"AVERAGE_REQUEST_SIZE", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(6)},
+    {"AVERAGE_QUEUE_SIZE", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(7)},
+    {"AVERAGE_WAIT_TIME", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(8)},
+    {"AVERAGE_RD_WAIT_TIME", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(9)},
+    {"AVERAGE_WR_WAIT_TIME", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(10)},
+    {"SERVICE_TIME", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(11)},
+    {"THROUGHPUT", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(12)},
+    {"UTILIZATION", (getter)DmStatsArea_metric_getter,
+      NULL, PyDoc_STR(DMSTATSAREA_metric_gets__doc__), METRIC_AS_VOID(13)},
     {NULL, NULL}
 };
 #undef COUNTER_AS_VOID
+#undef METRIC_AS_VOID
 
 #define DMSTATSAREA___doc__ \
 ""
