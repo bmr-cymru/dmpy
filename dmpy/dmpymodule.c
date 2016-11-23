@@ -2178,7 +2178,8 @@ static PySequenceMethods DmStats_sequence_methods = {
     DmStats_get_item
 };
 
-PyObject *DmStats_bind_devno(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_bind_devno(DmStatsObject *self, PyObject *args)
 {
     int major, minor;
 
@@ -2195,7 +2196,8 @@ PyObject *DmStats_bind_devno(DmStatsObject *self, PyObject *args)
     return Py_True;
 }
 
-PyObject *DmStats_bind_name(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_bind_name(DmStatsObject *self, PyObject *args)
 {
     char *name;
 
@@ -2218,7 +2220,8 @@ PyObject *DmStats_bind_name(DmStatsObject *self, PyObject *args)
     return Py_True;
 }
 
-PyObject *DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
 {
     char *uuid;
 
@@ -2246,17 +2249,20 @@ PyObject *DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
  * FIXME: expose these via the object's __dict__
  */
 
-PyObject *DmStats_nr_regions(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_nr_regions(DmStatsObject *self, PyObject *args)
 {
     return Py_BuildValue("i", dm_stats_get_nr_regions(self->ob_dms));
 }
 
-PyObject *DmStats_nr_groups(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_nr_groups(DmStatsObject *self, PyObject *args)
 {
     return Py_BuildValue("i", dm_stats_get_nr_groups(self->ob_dms));
 }
 
-PyObject *DmStats_region_present(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_region_present(DmStatsObject *self, PyObject *args)
 {
     int region_id;
 
@@ -2267,7 +2273,8 @@ PyObject *DmStats_region_present(DmStatsObject *self, PyObject *args)
                                                       region_id));
 }
 
-PyObject *DmStats_region_nr_areas(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_region_nr_areas(DmStatsObject *self, PyObject *args)
 {
     int region_id, val;
 
@@ -2283,12 +2290,14 @@ PyObject *DmStats_region_nr_areas(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("i", val);
 }
 
-PyObject *DmStats_nr_areas(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_nr_areas(DmStatsObject *self, PyObject *args)
 {
     return Py_BuildValue("i", dm_stats_get_nr_areas(self->ob_dms));
 }
 
-PyObject *DmStats_group_present(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_group_present(DmStatsObject *self, PyObject *args)
 {
     int group_id, val;
 
@@ -2299,7 +2308,8 @@ PyObject *DmStats_group_present(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("i", val);
 }
 
-PyObject *DmStats_set_sampling_interval(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_set_sampling_interval(DmStatsObject *self, PyObject *args)
 {
     uint64_t interval_ns;
     double interval;
@@ -2314,7 +2324,8 @@ PyObject *DmStats_set_sampling_interval(DmStatsObject *self, PyObject *args)
     return Py_True;
 }
 
-PyObject *DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
+static PyObject *
+DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
 {
     uint64_t interval_ns;
     double interval;
@@ -2325,7 +2336,8 @@ PyObject *DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
     return Py_BuildValue("d", interval);
 }
 
-PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *kwds)
+static PyObject *
+DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"program_id", "allow_empty", NULL};
     int allow_empty = 0;
@@ -2348,7 +2360,7 @@ PyObject *DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *
     return Py_True;
 }
 
-void
+static void
 _DmStats_clear_region_cache(DmStatsObject *self)
 {
     PyObject *region;
@@ -2379,7 +2391,7 @@ _DmStats_clear_region_cache(DmStatsObject *self)
     self->ob_regions_len = 0;
 }
 
-void
+static void
 _DmStats_set_region_cache(DmStatsObject *self)
 {
     struct dm_stats *dms;
@@ -2399,7 +2411,7 @@ _DmStats_set_region_cache(DmStatsObject *self)
     }
 }
 
-PyObject *
+static PyObject *
 DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"program_id", NULL};
@@ -2423,7 +2435,7 @@ DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
     return (PyObject *) self;
 }
 
-PyObject *
+static PyObject *
 DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"program_id", "region_id", NULL};
@@ -2717,7 +2729,7 @@ do {                                                       \
         return NULL;                                       \
 } while(0);
 
-Py_ssize_t
+static Py_ssize_t
 DmStatsRegion_len(PyObject *o)
 {
     DmStatsRegionObject *self = (DmStatsRegionObject *) o;
@@ -2739,7 +2751,8 @@ DmStatsRegion_len(PyObject *o)
 static DmStatsAreaObject *
 newDmStatsAreaObject(PyObject *stats, uint64_t region_id, uint64_t area_id);
 
-PyObject *DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
+static PyObject *
+DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
 {
     DmStatsRegionObject *self = (DmStatsRegionObject *) o;
     DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
