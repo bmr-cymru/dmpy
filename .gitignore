@@ -3,4 +3,4 @@ build/
 *.pyc
 dmpy.egg-info
 tests/__pycache__
-*.swp
+*.sw*
