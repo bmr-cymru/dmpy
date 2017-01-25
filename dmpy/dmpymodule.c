@@ -50,6 +50,8 @@
 #define NSEC_PER_MSEC   1000000L
 #define NSEC_PER_SEC    1000000000L
 
+#define FMTu64 "%" PRIu64
+
 PyDoc_STRVAR(dmpy__doc__,
 "dmpy is a set of Python bindings for the device-mapper library.\n");
 
@@ -2459,6 +2461,73 @@ DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
     return (PyObject *) self;
 }
 
+static PyObject *
+DmStats_create_region(DmStatsObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"start", "len", "step", "precise", "bounds",
+                             "program_id", "user_data", NULL};
+    char *program_id = NULL, *user_data = NULL;
+    uint64_t start = 0, len = 0, region_id;
+	struct dm_histogram *bounds = NULL;
+    int r, precise;
+    int64_t step;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|LLKiOzz:create_region",
+                                     kwlist, &start, &len, &step, &precise,
+                                     &bounds, &program_id, &user_data))
+        return NULL;
+
+    errno = 0;
+    r = dm_stats_create_region(self->ob_dms, &region_id, start, len, step,
+                               precise, bounds, program_id, user_data);
+
+    if (!r) {
+        if (errno)
+            PyErr_SetFromErrno(PyExc_OSError);
+        else
+            PyErr_SetString(PyExc_OSError, "Failed to create new region.");
+        return NULL;
+    }
+
+    Py_INCREF(self);
+    return (PyObject *) self;
+}
+
+static int _DmStats_delete_region(DmStatsObject *self, uint64_t region_id)
+{
+    if (!dm_stats_region_present(self->ob_dms, region_id)) {
+        PyErr_Format(PyExc_IndexError, "mStats region_id " FMTu64
+                     " does not exist.", region_id);
+        goto fail;
+    }
+
+    errno = 0;
+
+    if (!dm_stats_delete_region(self->ob_dms, region_id)) {
+        if (errno)
+            PyErr_SetFromErrno(PyExc_OSError);
+        else
+            PyErr_SetString(PyExc_OSError, "Failed to delete region " FMTu64
+                            ".");
+        goto fail;
+    }
+
+    return 0;
+fail:
+    return -1;
+}
+
+static PyObject *
+DmStats_delete_region(DmStatsObject *self, PyObject *args)
+{
+    uint64_t region_id;
+    if (!PyArg_ParseTuple(args, "K:delete_region", &region_id))
+        return NULL;
+    if (_DmStats_delete_region(self, region_id))
+        return NULL;
+    Py_INCREF(self);
+    return (PyObject *) self;
+}
+
 #define DMSTATS_bind_devno__doc__ \
 "Bind a DmStats object to the specified device major and minor values.\n" \
 "Any previous binding is cleared and any preexisting counter data\n"      \
@@ -2530,6 +2599,30 @@ DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
 #define DMSTATS_populate__doc__ \
 "Populate this DmStats object with data from device-mapper."
 
+#define DMSTATS_create_region__doc__ \
+"Create a new statistics region on the device bound to this\n\n"        \
+"DmStats object.\nstart and len specify the region start and length\n"  \
+"512b sectors.\n Passing zero for both start and len will create a\n"   \
+"region spanning the entire device.\n\n"                                \
+"Step determines how to subdivide the region into discrete counter\n"   \
+"sets: a positive value specifies the size of areas into which the\n"   \
+"region should be split while a negative value will split the region\n" \
+"into a number of areas equal to the absolute value of step:\n\n"       \
+"- a region with one area spanning the entire device:\n\n"              \
+"  dms.create_region(dms, 0, 0, -1, p, a);\n\n"                         \
+"- a region with areas of 1MiB:\n\n"                                    \
+"  dms.create_region(dms, 0, 0, 1 << 11, p, a);\n\n"                    \
+"- one 1MiB region starting at 1024 sectors with two areas:\n\n"        \
+"  dms.create_region(dms, 1024, 1 << 11, -2, p, a);\n\n"                \
+"If precise is non-zero attempt to create a region with nanosecond\n"   \
+"precision counters using the kernel precise_timestamps feature.\n\n"   \
+"precise - A flag to request nanosecond precision counters\n"           \
+"to be used for this region.\n"
+
+#define DMSTATS_delete_region__doc__ \
+"Delete the specified statistics region. This will also mark the\n"     \
+"region as not-present and discard any existing statistics data."
+
 #define DMSTATS___doc__ \
 ""
 
@@ -2562,6 +2655,10 @@ static PyMethodDef DmStats_methods[] = {
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_list__doc__)},
     {"populate", (PyCFunction)DmStats_populate,
         METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_populate__doc__)},
+    {"create_region", (PyCFunction)DmStats_create_region,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_create_region__doc__)},
+    {"delete_region", (PyCFunction)DmStats_delete_region,
+        METH_VARARGS | METH_KEYWORDS, PyDoc_STR(DMSTATS_delete_region__doc__)},
     {NULL, NULL}
 };
 
@@ -2575,15 +2672,11 @@ static PyMethodDef DmStats_methods[] = {
                                                                             \
 "Internally the dm_stats handle contains a pointer to a table of one\n"     \
 "or more dm_stats_region objects representing the regions registered\n"     \
-"with the dm_stats_create_region() method. These in turn point to a\n"      \
+"with the DmStats.create_region() method. These in turn point to a\n"       \
 "table of one or more dm_stats_counters objects containing the\n"           \
 "counter sets for each defined area within the region:\n\n"                 \
                                                                             \
-"dm_stats->dm_stats_region[nr_regions]->dm_stats_counters[nr_areas]\n\n"    \
-                                                                            \
-"This structure is private to the library and may change in future\n"       \
-"versions: all users should make use of the public interface and treat\n"   \
-"the dm_stats type as an opaque handle.\n\n"                                \
+"DmStats[nr_reginos]->DmStatsRegion[nr_areas]->DmStatsArea\n\n"             \
                                                                             \
 "Regions and counter sets are stored in order of increasing region_id.\n"   \
 "Depending on region specifications and the sequence of create and\n"       \
