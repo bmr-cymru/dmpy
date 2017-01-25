@@ -2091,7 +2091,7 @@ DmStats_len(PyObject *o)
     if (!self->ob_dms)
         return 0;
 
-    return (Py_ssize_t) self->ob_regions_len;
+    return (Py_ssize_t) dm_stats_get_nr_regions(self->ob_dms);
 }
 
 static DmStatsRegionObject *
