@@ -63,6 +63,8 @@ retrieving one from a `DmTask` object that has executed a
 `DM_DEVICE_INFO` ioctl. Similarly, `DmStatsRegion` objects should only
 be obtained by accessing the members of a containing `DmStats` object.`
 
+See the [HACKING.md][3] file for information on `dmpy` internals.
+
 ## Getting help
 All classes, methods, and module functions have an associated `__doc__`
 string, which can be displayed using Python's builtin `help()`:
@@ -158,3 +160,4 @@ True
  [0]: https://github.com/bmr-cymru/dmpy
  [1]: https://github.com/bmr-cymru/dmpy/issues
  [2]: https://www.redhat.com/mailman/listinfo/dm-devel
+ [3]: https://github.com/bmr-cymru/dmpy/blob/master/HACKING.md
