@@ -8,7 +8,9 @@ most function and parameter names are exactly the same as their
 `dm_task_` are dropped where the function is a method of a class, for
 e.g.:
 
-  ```dm_task_set_name() -> dmpy.DmTask.set_name() ```
+```
+  dm_task_set_name() -> dmpy.DmTask.set_name()
+```
 
 The dmpy project is [hosted on GitGub][0].
 
@@ -19,7 +21,9 @@ Bugs can be reported at the [GitHub Issue Tracker][1], or via the
 ## Building dmpy
 To build the module, from the top-level directory, run:
 
-  ```$ python setup.py build ```
+```
+$ python setup.py build
+```
 
 To build the module for a specific version of the python interpreter
 (either 2 or 3), use the command name provided by your distribution
@@ -47,10 +51,10 @@ methods. The following dmpy classes are implemented:
 
   * `DmCookie` Cookie used for `UDEV` synchronisation (experimental)
   * `DmError`  Generic device-mapper error class
-  * `DmTask`,  Represents a dm_task object and its methods
-  * `DmTimestamp` Represents the device-mapper dm_timestamp
-  * `DmInfo`   A dm_info struct as returned by `DM_DEVICE_INFO`
-  * `DmStats`  Represents a dm_stats handle and the objects it contains
+  * `DmTask`,  Represents a `dm_task` object and its methods
+  * `DmTimestamp` Represents the device-mapper `dm_timestamp`
+  * `DmInfo`   A `dm_info` struct as returned by `DM_DEVICE_INFO`
+  * `DmStats`  Represents a `dm_stats` handle and the objects it contains
   * `DmStatsRegion`  Represents one region and the areas it contains.
 
 All of these (except `DmInfo` and `DmStatsRegion`) expose a class-name
@@ -63,7 +67,7 @@ be obtained by accessing the members of a containing `DmStats` object.`
 All classes, methods, and module functions have an associated `__doc__`
 string, which can be displayed using Python's builtin `help()`:
 
-```
+```python
 >>> help(dm.DmTask.get_uuid)
 Help on method_descriptor:
 
