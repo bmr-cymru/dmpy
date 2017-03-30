@@ -51,6 +51,7 @@ def _get_cmd_output(cmd):
 
     p = Popen(args, shell=False, stdout=PIPE,
               stderr=STDOUT, bufsize=-1, close_fds=True)
+
     # stderr will always be None
     (stdout, stderr) = p.communicate()
 
@@ -260,7 +261,7 @@ class DmpyTests(unittest.TestCase):
         # Assert that dm.STRING_MANGLING_AUTO is default.
         initial_mode = dm.get_name_mangling_mode()
         self.assertEqual(initial_mode, dm.STRING_MANGLING_AUTO)
-        # Assert that we get each mangline mode back as expected.
+        # Assert that we get each mangling mode back as expected.
         self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_NONE))
         self.assertEqual(dm.get_name_mangling_mode(), dm.STRING_MANGLING_NONE)
         self.assertTrue(dm.set_name_mangling_mode(dm.STRING_MANGLING_AUTO))
