@@ -85,7 +85,7 @@ static PyObject *DmErrorObject;
 
 typedef struct {
     PyObject_HEAD
-    struct dm_timestamp *ob_ts;
+    struct dm_timestamp *ts_stamp;
 } DmTimestampObject;
 
 static PyTypeObject DmTimestamp_Type;
@@ -104,8 +104,8 @@ DmTimestamp_init(DmTimestampObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTuple(args, ":__init__"))
         return -1;
 
-    self->ob_ts = dm_timestamp_alloc();
-    if (!self->ob_ts) {
+    self->ts_stamp = dm_timestamp_alloc();
+    if (!self->ts_stamp) {
         PyErr_SetString(PyExc_MemoryError, "Failed to allocate dm_timestamp.");
         return -1;
     }
@@ -115,9 +115,9 @@ DmTimestamp_init(DmTimestampObject *self, PyObject *args, PyObject *kwds)
 static void
 DmTimestamp_dealloc(DmTimestampObject *self)
 {
-    if (self->ob_ts)
-        dm_timestamp_destroy(self->ob_ts);
-    self->ob_ts = NULL;
+    if (self->ts_stamp)
+        dm_timestamp_destroy(self->ts_stamp);
+    self->ts_stamp = NULL;
 
     PyObject_Del(self);
 }
@@ -132,12 +132,12 @@ DmTimestamp_copy(DmTimestampObject *self, PyObject *args)
     if (!(copy = newDmTimestampObject()))
         return NULL;
 
-    copy->ob_ts = dm_timestamp_alloc();
-    if (!self->ob_ts) {
+    copy->ts_stamp = dm_timestamp_alloc();
+    if (!self->ts_stamp) {
         PyErr_SetString(PyExc_MemoryError, "Failed to allocate dm_timestamp.");
         return NULL;
     }
-    dm_timestamp_copy(copy->ob_ts, self->ob_ts);
+    dm_timestamp_copy(copy->ts_stamp, self->ts_stamp);
 
     return (PyObject *) copy;
 }
@@ -145,7 +145,7 @@ DmTimestamp_copy(DmTimestampObject *self, PyObject *args)
 static PyObject *
 DmTimestamp_get(DmTimestampObject *self, PyObject *args)
 {
-    if (!dm_timestamp_get(self->ob_ts)) {
+    if (!dm_timestamp_get(self->ts_stamp)) {
         PyErr_SetString(PyExc_OSError, "Failed to get device-mapper "
                         "timestamp.");
         return NULL;
@@ -162,7 +162,7 @@ DmTimestamp_compare(DmTimestampObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!:compare", &DmTimestamp_Type, &to))
         return NULL;
 
-    return Py_BuildValue("i", dm_timestamp_compare(self->ob_ts, to->ob_ts));
+    return Py_BuildValue("i", dm_timestamp_compare(self->ts_stamp, to->ts_stamp));
 }
 
 static PyObject *
@@ -173,7 +173,7 @@ DmTimestamp_delta(DmTimestampObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!:compare", &DmTimestamp_Type, &to))
         return NULL;
 
-    return Py_BuildValue("i", dm_timestamp_delta(self->ob_ts, to->ob_ts));
+    return Py_BuildValue("i", dm_timestamp_delta(self->ts_stamp, to->ts_stamp));
 }
 
 #define DMTIMESTAMP_copy__doc__ \
@@ -250,10 +250,10 @@ static PyTypeObject DmTimestamp_Type = {
 
 typedef struct {
     PyObject_HEAD
-    uint32_t ob_cookie;
-    uint16_t ob_val_prefix;
-    uint16_t ob_val_base;
-    PyObject *ob_ready; /* Py_True / Py_False */
+    uint32_t ck_cookie;
+    uint16_t ck_val_prefix;
+    uint16_t ck_val_base;
+    PyObject *ck_ready; /* Py_True / Py_False */
 } DmCookieObject;
 
 static PyTypeObject DmCookie_Type;
@@ -263,8 +263,8 @@ static PyTypeObject DmCookie_Type;
 static void
 _dmpy_set_cookie_values(DmCookieObject *self)
 {
-    self->ob_val_base = self->ob_cookie & ~DM_UDEV_FLAGS_MASK;
-    self->ob_val_prefix = ((self->ob_cookie & DM_UDEV_FLAGS_MASK)
+    self->ck_val_base = self->ck_cookie & ~DM_UDEV_FLAGS_MASK;
+    self->ck_val_prefix = ((self->ck_cookie & DM_UDEV_FLAGS_MASK)
                            >> DM_UDEV_FLAGS_SHIFT);
 }
 
@@ -281,8 +281,8 @@ _dmpy_check_cookie_value(unsigned value)
 static void
 DmCookie_dealloc(DmCookieObject *self)
 {
-    /* ob_ready may be NULL if __init__ failed, or was never called. */
-    Py_XDECREF(self->ob_ready);
+    /* ck_ready may be NULL if __init__ failed, or was never called. */
+    Py_XDECREF(self->ck_ready);
     PyObject_Del(self);
 }
 
@@ -292,11 +292,11 @@ _DmCookie_init(DmCookieObject *self, uint32_t value)
     if (_dmpy_check_cookie_value((unsigned) value))
         return -1;
 
-    self->ob_cookie = (uint32_t) value;
+    self->ck_cookie = (uint32_t) value;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_False);
-    self->ob_ready = Py_False;
+    self->ck_ready = Py_False;
 
     return 0;
 }
@@ -325,7 +325,7 @@ DmCookie_set_value(DmCookieObject *self, PyObject *args)
     if (!_dmpy_check_cookie_value(value))
         return NULL;
 
-    self->ob_cookie = (uint32_t) value;
+    self->ck_cookie = (uint32_t) value;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_True);
@@ -355,8 +355,8 @@ DmCookie_set_prefix(DmCookieObject *self, PyObject *args)
 
     prefix <<= DM_UDEV_FLAGS_SHIFT;
 
-    self->ob_cookie = (uint32_t) (self->ob_cookie & ~DM_UDEV_FLAGS_MASK);
-    self->ob_cookie |= prefix;
+    self->ck_cookie = (uint32_t) (self->ck_cookie & ~DM_UDEV_FLAGS_MASK);
+    self->ck_cookie |= prefix;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_True);
@@ -373,8 +373,8 @@ DmCookie_set_base(DmCookieObject *self, PyObject *args)
     if (_dmpy_check_base_or_prefix_value(base))
         return NULL;
 
-    self->ob_cookie = (uint32_t) (self->ob_cookie & DM_UDEV_FLAGS_MASK);
-    self->ob_cookie |= base;
+    self->ck_cookie = (uint32_t) (self->ck_cookie & DM_UDEV_FLAGS_MASK);
+    self->ck_cookie |= base;
     _dmpy_set_cookie_values(self);
 
     Py_INCREF(Py_True);
@@ -386,7 +386,7 @@ DmCookie_udev_complete(DmCookieObject *self, PyObject *args)
 {
     PyObject *ret;
     int r;
-    r = dm_udev_complete(self->ob_cookie);
+    r = dm_udev_complete(self->ck_cookie);
     ret = (r) ? Py_True : Py_False;
     Py_INCREF(ret);
     return ret;
@@ -398,25 +398,25 @@ _DmCookie_udev_wait(DmCookieObject *self, int immediate)
     PyObject *ret;
     int r, ready;
 
-    if (self->ob_ready == Py_True) {
+    if (self->ck_ready == Py_True) {
         PyErr_SetString(PyExc_ValueError, "Cannot udev_wait() on a "
                         "completed DmCookie.");
         return NULL;
     }
 
     if (!immediate) {
-        r = dm_udev_wait(self->ob_cookie);
+        r = dm_udev_wait(self->ck_cookie);
         ready = r;
     } else
-        r = dm_udev_wait_immediate(self->ob_cookie, &ready);
+        r = dm_udev_wait_immediate(self->ck_cookie, &ready);
 
     ret = (r) ? Py_True : Py_False;
     Py_INCREF(ret);
 
     if (r && ready) {
-        Py_DECREF(self->ob_ready);
+        Py_DECREF(self->ck_ready);
         Py_INCREF(Py_True);
-        self->ob_ready = Py_True;
+        self->ck_ready = Py_True;
     }
 
     return ret;
@@ -481,13 +481,13 @@ static PyMethodDef DmCookie_methods[] = {
 /* Attributes for DmCookieObject struct members.
  */
 static PyMemberDef DmCookie_members[] = {
-    {"value", T_INT, offsetof(DmCookieObject, ob_cookie), READONLY,
+    {"value", T_INT, offsetof(DmCookieObject, ck_cookie), READONLY,
      PyDoc_STR("The current value of this `DmCookie`.")},
-    {"prefix", T_SHORT, offsetof(DmCookieObject, ob_val_prefix), READONLY,
+    {"prefix", T_SHORT, offsetof(DmCookieObject, ck_val_prefix), READONLY,
      PyDoc_STR("The current prefix value of this `DmCookie`.")},
-    {"base", T_SHORT, offsetof(DmCookieObject, ob_val_base), READONLY,
+    {"base", T_SHORT, offsetof(DmCookieObject, ck_val_base), READONLY,
      PyDoc_STR("The current base value of this `DmCookie`.")},
-    {"ready", T_OBJECT, offsetof(DmCookieObject, ob_ready), READONLY,
+    {"ready", T_OBJECT, offsetof(DmCookieObject, ck_ready), READONLY,
      PyDoc_STR("The current completion state of this `DmCookie`.")},
     {NULL}
 };
@@ -541,7 +541,7 @@ static PyTypeObject DmCookie_Type = {
 
 typedef struct {
     PyObject_HEAD
-    struct dm_info ob_info;
+    struct dm_info in_info;
 } DmInfoObject;
 
 static PyTypeObject DmInfo_Type;
@@ -560,38 +560,38 @@ DmInfo_init(DmInfoObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTuple(args, ":__init__"))
         return -1;
 
-    memset(&self->ob_info, 0, sizeof(self->ob_info));
+    memset(&self->in_info, 0, sizeof(self->in_info));
     return 0;
 }
 
 /* Attributes for dm_info struct members.
  */
 static PyMemberDef DmInfo_members[] = {
-    {"exists", T_INT, offsetof(DmInfoObject, ob_info.exists), READONLY,
+    {"exists", T_INT, offsetof(DmInfoObject, in_info.exists), READONLY,
      PyDoc_STR("Flag indicating whether this device exists.")},
-    {"suspended", T_INT, offsetof(DmInfoObject, ob_info.suspended), READONLY,
+    {"suspended", T_INT, offsetof(DmInfoObject, in_info.suspended), READONLY,
      PyDoc_STR("Flag indicating whether this device is suspended.")},
-    {"live_table", T_INT, offsetof(DmInfoObject, ob_info.live_table), READONLY,
+    {"live_table", T_INT, offsetof(DmInfoObject, in_info.live_table), READONLY,
      PyDoc_STR("Flag indicating whether this device has a live table.")},
-    {"inactive_table", T_INT, offsetof(DmInfoObject, ob_info.inactive_table),
+    {"inactive_table", T_INT, offsetof(DmInfoObject, in_info.inactive_table),
      READONLY, PyDoc_STR("Flag indicating whether this device has an inactive"
      "table.")},
-    {"open_count", T_INT, offsetof(DmInfoObject, ob_info.open_count), READONLY,
+    {"open_count", T_INT, offsetof(DmInfoObject, in_info.open_count), READONLY,
      PyDoc_STR("Count of open references to this device.")},
-    {"event_nr", T_UINT, offsetof(DmInfoObject, ob_info.event_nr), READONLY,
+    {"event_nr", T_UINT, offsetof(DmInfoObject, in_info.event_nr), READONLY,
      PyDoc_STR("The current event counter value for the device.")},
-    {"major", T_UINT, offsetof(DmInfoObject, ob_info.major), READONLY,
+    {"major", T_UINT, offsetof(DmInfoObject, in_info.major), READONLY,
      PyDoc_STR("The major number of the device.")},
-    {"minor", T_UINT, offsetof(DmInfoObject, ob_info.minor), READONLY,
+    {"minor", T_UINT, offsetof(DmInfoObject, in_info.minor), READONLY,
      PyDoc_STR("The minor number of the device.")},
-    {"read_only", T_INT, offsetof(DmInfoObject, ob_info.read_only), READONLY,
+    {"read_only", T_INT, offsetof(DmInfoObject, in_info.read_only), READONLY,
      PyDoc_STR("The read-only state of the device (0=rw, 1=ro).")},
-    {"target_count", T_INT, offsetof(DmInfoObject, ob_info.target_count),
+    {"target_count", T_INT, offsetof(DmInfoObject, in_info.target_count),
      READONLY, PyDoc_STR("Number of targets in the live table.")},
-    {"deferred_remove", T_INT, offsetof(DmInfoObject, ob_info.deferred_remove),
+    {"deferred_remove", T_INT, offsetof(DmInfoObject, in_info.deferred_remove),
      READONLY, PyDoc_STR("Flag indicating whether deferred removal is enabled "
      "for the device.")},
-    {"internal_suspend", T_INT, offsetof(DmInfoObject, ob_info.internal_suspend),
+    {"internal_suspend", T_INT, offsetof(DmInfoObject, in_info.internal_suspend),
      READONLY, PyDoc_STR("Flag indicating whether the device is suspended"
      "internally by the device-mapper.")},
     {NULL}
@@ -709,10 +709,10 @@ static const char * const _DmTask_flag_strings[] = {
 
 typedef struct {
     PyObject_HEAD
-    struct dm_task *ob_dmt;
-    DmCookieObject *ob_cookie;
-    uint32_t ob_flags; /* dm_task state flags */
-    int ob_task_type; /* DM_DEVICE_* type at instantiation. */
+    struct dm_task *tk_dmt;
+    DmCookieObject *ck_cookie;
+    uint32_t tk_flags; /* dm_task state flags */
+    int tk_type; /* DM_DEVICE_* type at instantiation. */
 } DmTaskObject;
 
 static PyTypeObject DmTask_Type;
@@ -721,24 +721,24 @@ static PyTypeObject DmTask_Type;
 
 /*
  * Check whether an ioctl has been performed, and whether `flag` is present
- * in `self->ob_flags`, and raise TypeError if either condition is not met.
+ * in `self->tk_flags`, and raise TypeError if either condition is not met.
  */
 static int
 _DmTask_check_data_flags(DmTaskObject *self, uint32_t flag, char *method)
 {
     int flag_index = 0;
 
-    if (!(self->ob_flags & DMT_DID_IOCTL)) {
+    if (!(self->tk_flags & DMT_DID_IOCTL)) {
         PyErr_Format(PyExc_TypeError, "DmTask(%s).%s requires ioctl data.",
-                     _dm_task_type_names[self->ob_task_type], method);
+                     _dm_task_type_names[self->tk_type], method);
         return -1;
     }
 
-    if (!(self->ob_flags & flag)) {
+    if (!(self->tk_flags & flag)) {
         while (flag >>= 1)
             flag_index++;
         PyErr_Format(PyExc_TypeError, "DmTask(%s) does not provide "
-                     "%s data.", _dm_task_type_names[self->ob_task_type],
+                     "%s data.", _dm_task_type_names[self->tk_type],
                      _DmTask_flag_strings[flag_index]);
         return -1;
     }
@@ -753,10 +753,10 @@ DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTuple(args, "i:__init__", &type))
         return -1;
 
-    self->ob_cookie = NULL;
-    self->ob_flags = 0;
+    self->ck_cookie = NULL;
+    self->tk_flags = 0;
 
-    if (!(self->ob_dmt = dm_task_create(type))) {
+    if (!(self->tk_dmt = dm_task_create(type))) {
         /* FIXME: use dm_task_get_errno */
         PyErr_SetFromErrno(PyExc_OSError);
         return -1;
@@ -771,10 +771,10 @@ DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
      * we know the type that was requested, in order to have the correct
      * expectations for which fields will be valid in the response.
      */
-    self->ob_task_type = type;
-    self->ob_flags = 0;
+    self->tk_type = type;
+    self->tk_flags = 0;
 
-    if (!dm_task_enable_checks(self->ob_dmt)) {
+    if (!dm_task_enable_checks(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask checks.");
         return -1;
     }
@@ -785,11 +785,11 @@ DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
 static void
 DmTask_dealloc(DmTaskObject *self)
 {
-    if (self->ob_dmt)
-        dm_task_destroy(self->ob_dmt);
-    self->ob_dmt = NULL;
+    if (self->tk_dmt)
+        dm_task_destroy(self->tk_dmt);
+    self->tk_dmt = NULL;
 
-    Py_XDECREF(self->ob_cookie);
+    Py_XDECREF(self->ck_cookie);
 
     PyObject_Del(self);
 }
@@ -804,7 +804,7 @@ DmTask_set_name(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:set_name", &name))
         return NULL;
 
-    if (!dm_task_set_name(self->ob_dmt, name)) {
+    if (!dm_task_set_name(self->tk_dmt, name)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask name.");
         return NULL;
     }
@@ -821,7 +821,7 @@ DmTask_set_uuid(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:set_uuid", &uuid))
         return NULL;
 
-    if (!dm_task_set_uuid(self->ob_dmt, uuid)) {
+    if (!dm_task_set_uuid(self->tk_dmt, uuid)) {
         PyErr_SetString(PyExc_OSError, "failed to set DmTask name.");
         return NULL;
     }
@@ -834,17 +834,17 @@ static PyObject *
 DmTask_run(DmTaskObject *self, PyObject *args)
 {
     /* DMT_DID_IOCTL does not imply success. */
-    self->ob_flags |= DMT_DID_IOCTL;
+    self->tk_flags |= DMT_DID_IOCTL;
 
-    if (!(dm_task_run(self->ob_dmt))) {
-        self->ob_flags |= DMT_DID_ERROR;
-        errno = dm_task_get_errno(self->ob_dmt);
+    if (!(dm_task_run(self->tk_dmt))) {
+        self->tk_flags |= DMT_DID_ERROR;
+        errno = dm_task_get_errno(self->tk_dmt);
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     }
 
     /* set data flags from task type */
-    self->ob_flags |= _DmTask_task_type_flags[self->ob_task_type];
+    self->tk_flags |= _DmTask_task_type_flags[self->tk_type];
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -857,7 +857,7 @@ static PyObject *DmTask_get_driver_version(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, -1, "get_driver_version"))
         return NULL;
 
-    if (!dm_task_get_driver_version(self->ob_dmt, version, sizeof(version))) {
+    if (!dm_task_get_driver_version(self->tk_dmt, version, sizeof(version))) {
         PyErr_SetString(PyExc_OSError, "Failed to get device-mapper "
                         "library version.");
         return NULL;
@@ -877,7 +877,7 @@ DmTask_get_info(DmTaskObject *self, PyObject *args)
     if (!info)
         return NULL;
 
-    if (!(dm_task_get_info(self->ob_dmt, &info->ob_info))) {
+    if (!(dm_task_get_info(self->tk_dmt, &info->in_info))) {
         Py_DECREF(info);
         Py_INCREF(Py_None);
         return Py_None;
@@ -900,11 +900,11 @@ static PyObject *DmTask_get_uuid(DmTaskObject *self, PyObject *args, PyObject *k
         return NULL;
 
     if (mangled < 0)
-        uuid = dm_task_get_uuid(self->ob_dmt);
+        uuid = dm_task_get_uuid(self->tk_dmt);
     else if (mangled)
-        uuid = dm_task_get_uuid_mangled(self->ob_dmt);
+        uuid = dm_task_get_uuid_mangled(self->tk_dmt);
     else
-        uuid = dm_task_get_uuid_unmangled(self->ob_dmt);
+        uuid = dm_task_get_uuid_unmangled(self->tk_dmt);
 
     return Py_BuildValue("s", uuid);
 }
@@ -948,7 +948,7 @@ DmTask_get_deps(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, DMT_HAVE_DEPS, "get_deps"))
         return NULL;
 
-    if (!(deps = dm_task_get_deps(self->ob_dmt))) {
+    if (!(deps = dm_task_get_deps(self->tk_dmt))) {
         PyErr_SetString(PyExc_OSError, "Failed to retrieve dependencies from "
                         "device-mapper.");
         return NULL;
@@ -1016,7 +1016,7 @@ DmTask_get_versions(DmTaskObject *self, PyObject *args)
                                  "get_versions"))
         return NULL;
 
-    versions = dm_task_get_versions(self->ob_dmt);
+    versions = dm_task_get_versions(self->tk_dmt);
     if (!versions) {
         PyErr_SetString(PyExc_OSError, "Failed to get task versions "
                         "from device-mapper");
@@ -1032,7 +1032,7 @@ DmTask_get_message_response(DmTaskObject *self, PyObject *args)
                                  "get_message_response"))
         return NULL;
 
-    return Py_BuildValue("s", dm_task_get_message_response(self->ob_dmt));
+    return Py_BuildValue("s", dm_task_get_message_response(self->tk_dmt));
 }
 
 static PyObject *
@@ -1050,11 +1050,11 @@ DmTask_get_name(DmTaskObject *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     if (mangled < 0)
-        name = dm_task_get_name(self->ob_dmt);
+        name = dm_task_get_name(self->tk_dmt);
     else if (mangled)
-        name = dm_task_get_name_mangled(self->ob_dmt);
+        name = dm_task_get_name_mangled(self->tk_dmt);
     else
-        name = dm_task_get_name_unmangled(self->ob_dmt);
+        name = dm_task_get_name_unmangled(self->tk_dmt);
 
     return Py_BuildValue("s", name);
 }
@@ -1097,7 +1097,7 @@ DmTask_get_names(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, DMT_HAVE_NAME_LIST, "get_names"))
         return NULL;
 
-    if (!(names = dm_task_get_names(self->ob_dmt))) {
+    if (!(names = dm_task_get_names(self->tk_dmt))) {
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -1108,7 +1108,7 @@ DmTask_get_names(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_set_ro(DmTaskObject *self, PyObject *args)
 {
-    dm_task_set_ro(self->ob_dmt);
+    dm_task_set_ro(self->tk_dmt);
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -1138,7 +1138,7 @@ DmTask_set_newname(DmTaskObject *self, PyObject *args)
         goto fail;
     }
 
-    if (!dm_task_set_newname(self->ob_dmt, newname)) {
+    if (!dm_task_set_newname(self->tk_dmt, newname)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask new name.");
         goto fail;
     }
@@ -1163,7 +1163,7 @@ DmTask_set_newuuid(DmTaskObject *self, PyObject *args)
         goto fail;
     }
 
-    if (!dm_task_set_newuuid(self->ob_dmt, newuuid)) {
+    if (!dm_task_set_newuuid(self->tk_dmt, newuuid)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask new uuid.");
         goto fail;
     }
@@ -1183,7 +1183,7 @@ DmTask_set_major(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_major", &major))
         goto fail;
 
-    if (!dm_task_set_major(self->ob_dmt, major)) {
+    if (!dm_task_set_major(self->tk_dmt, major)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask major number.");
         goto fail;
     }
@@ -1203,7 +1203,7 @@ DmTask_set_minor(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_minor", &minor))
         goto fail;
 
-    if (!dm_task_set_minor(self->ob_dmt, minor)) {
+    if (!dm_task_set_minor(self->tk_dmt, minor)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask minor number.");
         goto fail;
     }
@@ -1225,7 +1225,7 @@ DmTask_set_major_minor(DmTaskObject *self, PyObject *args, PyObject *kwds)
         &major, &minor, &allow_fallback))
         goto fail;
 
-    if (!dm_task_set_major_minor(self->ob_dmt, major, minor, allow_fallback)) {
+    if (!dm_task_set_major_minor(self->tk_dmt, major, minor, allow_fallback)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask major and "
                         "minor numbers.");
         goto fail;
@@ -1246,7 +1246,7 @@ DmTask_set_uid(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_uid", &uid))
         goto fail;
 
-    if (!dm_task_set_uid(self->ob_dmt, uid)) {
+    if (!dm_task_set_uid(self->tk_dmt, uid)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask uid.");
         goto fail;
     }
@@ -1266,7 +1266,7 @@ DmTask_set_gid(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_gid", &gid))
         goto fail;
 
-    if (!dm_task_set_gid(self->ob_dmt, gid)) {
+    if (!dm_task_set_gid(self->tk_dmt, gid)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask gid.");
         goto fail;
     }
@@ -1286,7 +1286,7 @@ DmTask_set_mode(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_mode", &mode))
         goto fail;
 
-    if (!dm_task_set_mode(self->ob_dmt, mode)) {
+    if (!dm_task_set_mode(self->tk_dmt, mode)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask mode.");
         goto fail;
     }
@@ -1309,9 +1309,9 @@ DmTask_set_cookie(DmTaskObject *self, PyObject *args)
 
     /* The DmTask holds a reference to the cookie object. */
     Py_INCREF(cookie);
-    self->ob_cookie = cookie;
+    self->ck_cookie = cookie;
 
-    if (!dm_task_set_cookie(self->ob_dmt, &cookie->ob_cookie, flags)) {
+    if (!dm_task_set_cookie(self->tk_dmt, &cookie->ck_cookie, flags)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask cookie.");
         goto fail;
     }
@@ -1332,7 +1332,7 @@ DmTask_set_event_nr(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_event_nr", &event_nr))
         return NULL;
 
-    if (!dm_task_set_event_nr(self->ob_dmt, event_nr)) {
+    if (!dm_task_set_event_nr(self->tk_dmt, event_nr)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask event_nr.");
         return NULL;
     }
@@ -1349,7 +1349,7 @@ DmTask_set_geometry(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "ssss:set_geometry", &cylinders, &sectors,
                           &heads, &start))
 
-    if (!dm_task_set_geometry(self->ob_dmt, cylinders, sectors, heads, start)) {
+    if (!dm_task_set_geometry(self->tk_dmt, cylinders, sectors, heads, start)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask geometry,");
         return NULL;
     }
@@ -1366,7 +1366,7 @@ DmTask_set_message(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:set_message", &message))
         return NULL;
 
-    if (!dm_task_set_message(self->ob_dmt, message)) {
+    if (!dm_task_set_message(self->tk_dmt, message)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask message.");
         return NULL;
     }
@@ -1382,7 +1382,7 @@ DmTask_set_sector(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_sector", &sector))
         return NULL;
 
-    if (!dm_task_set_sector(self->ob_dmt, sector)) {
+    if (!dm_task_set_sector(self->tk_dmt, sector)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask event_nr.");
         return NULL;
     }
@@ -1394,7 +1394,7 @@ DmTask_set_sector(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_no_flush(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_no_flush(self->ob_dmt)) {
+    if (!dm_task_no_flush(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask no_flush.");
         return NULL;
     }
@@ -1406,7 +1406,7 @@ DmTask_no_flush(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_no_open_count(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_no_open_count(self->ob_dmt)) {
+    if (!dm_task_no_open_count(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask no_open_count.");
         return NULL;
     }
@@ -1418,7 +1418,7 @@ DmTask_no_open_count(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_skip_lockfs(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_skip_lockfs(self->ob_dmt)) {
+    if (!dm_task_skip_lockfs(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask skip_lockfs.");
         return NULL;
     }
@@ -1430,7 +1430,7 @@ DmTask_skip_lockfs(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_query_inactive_table(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_query_inactive_table(self->ob_dmt)) {
+    if (!dm_task_query_inactive_table(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask "
                         "query_inactive_table.");
         return NULL;
@@ -1443,7 +1443,7 @@ DmTask_query_inactive_table(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_suppress_identical_reload(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_suppress_identical_reload(self->ob_dmt)) {
+    if (!dm_task_suppress_identical_reload(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask "
                         "suppress_identical_reload.");
         return NULL;
@@ -1456,7 +1456,7 @@ DmTask_suppress_identical_reload(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_secure_data(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_secure_data(self->ob_dmt)) {
+    if (!dm_task_secure_data(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask secure_data.");
         return NULL;
     }
@@ -1468,7 +1468,7 @@ DmTask_secure_data(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_retry_remove(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_retry_remove(self->ob_dmt)) {
+    if (!dm_task_retry_remove(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask retry_remove.");
         return NULL;
     }
@@ -1480,7 +1480,7 @@ DmTask_retry_remove(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_deferred_remove(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_deferred_remove(self->ob_dmt)) {
+    if (!dm_task_deferred_remove(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask deferred_remove.");
         return NULL;
     }
@@ -1492,12 +1492,12 @@ DmTask_deferred_remove(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_set_record_timestamp(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_set_record_timestamp(self->ob_dmt)) {
+    if (!dm_task_set_record_timestamp(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask record_timestamp.");
         return NULL;
     }
 
-    self->ob_flags |= DMT_HAVE_TIMESTAMP;
+    self->tk_flags |= DMT_HAVE_TIMESTAMP;
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -1516,12 +1516,12 @@ DmTask_get_ioctl_timestamp(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, -1, "get_ioctl_timestamp"))
         return NULL;
 
-    if (!(self->ob_flags & DMT_HAVE_TIMESTAMP)) {
+    if (!(self->tk_flags & DMT_HAVE_TIMESTAMP)) {
         PyErr_SetString(PyExc_TypeError, "DmTask timestamps not enabled.");
         return NULL;
     }
 
-    if (!(ts = dm_task_get_ioctl_timestamp(self->ob_dmt))) {
+    if (!(ts = dm_task_get_ioctl_timestamp(self->tk_dmt))) {
         PyErr_SetString(PyExc_OSError, "Failed to get ioctl timestamp from "
                         "device-mapper.");
         return NULL;
@@ -1532,7 +1532,7 @@ DmTask_get_ioctl_timestamp(DmTaskObject *self, PyObject *args)
         return NULL;
 
     /* Make a copy, as ts is allocated in the ioctl buffer. */
-    dm_timestamp_copy(new_ts->ob_ts, ts);
+    dm_timestamp_copy(new_ts->ts_stamp, ts);
 
     return (PyObject *) new_ts;
 }
@@ -1540,7 +1540,7 @@ DmTask_get_ioctl_timestamp(DmTaskObject *self, PyObject *args)
 static PyObject *
 DmTask_enable_checks(DmTaskObject *self, PyObject *args)
 {
-    if (!dm_task_enable_checks(self->ob_dmt)) {
+    if (!dm_task_enable_checks(self->tk_dmt)) {
         PyErr_SetString(PyExc_OSError, "Failed to enable device-mapper "
                         "task checks.");
         return NULL;
@@ -1557,7 +1557,7 @@ DmTask_set_add_node(DmTaskObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:set_add_node", &add_node))
         return NULL;
 
-    if (!dm_task_set_add_node(self->ob_dmt, (dm_add_node_t) add_node)) {
+    if (!dm_task_set_add_node(self->tk_dmt, (dm_add_node_t) add_node)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask add_node.");
         return NULL;
     }
@@ -1585,7 +1585,7 @@ DmTask_set_read_ahead(DmTaskObject *self, PyObject *args)
         goto fail;
     }
 
-    if (!dm_task_set_read_ahead(self->ob_dmt, (uint32_t) read_ahead,
+    if (!dm_task_set_read_ahead(self->tk_dmt, (uint32_t) read_ahead,
                                 (uint32_t) read_ahead_flags)) {
         PyErr_SetString(PyExc_OSError, "Failed to set DmTask read ahead.");
         goto fail;
@@ -1608,7 +1608,7 @@ DmTask_add_target(DmTaskObject *self, PyObject *args)
                           &ttype, &params))
         return NULL;
 
-    if (!dm_task_add_target(self->ob_dmt, start, size, ttype, params)) {
+    if (!dm_task_add_target(self->tk_dmt, start, size, ttype, params)) {
         PyErr_SetString(PyExc_OSError, "Failed to add target to DmTask.");
         return NULL;
     }
@@ -1623,10 +1623,10 @@ DmTask_get_errno(DmTaskObject *self, PyObject *args)
     if (_DmTask_check_data_flags(self, -1, "get_errno"))
         return NULL;
 
-    if (!(self->ob_flags && DMT_DID_ERROR))
+    if (!(self->tk_flags && DMT_DID_ERROR))
         return 0;
 
-    return Py_BuildValue("i", dm_task_get_errno(self->ob_dmt));
+    return Py_BuildValue("i", dm_task_get_errno(self->tk_dmt));
 }
 
 #define DMTASK_set_name__doc__ \
@@ -1902,10 +1902,10 @@ static PyTypeObject DmTask_Type = {
 
 typedef struct {
     PyObject_HEAD
-    struct dm_stats *ob_dms;
-    uint64_t ob_sequence; /* sequence number protecting ob_dms */
-    PyObject **ob_regions; /* region cache */
-    Py_ssize_t ob_regions_len; /* length of the region cache in regions. */
+    struct dm_stats *ds_dms;
+    uint64_t ds_sequence; /* sequence number protecting ds_dms */
+    PyObject **ds_regions; /* region cache */
+    Py_ssize_t ds_regions_len; /* length of the region cache in regions. */
 } DmStatsObject;
 
 static PyTypeObject DmStats_Type;
@@ -1914,49 +1914,49 @@ static PyTypeObject DmStats_Type;
 
 typedef struct {
     PyObject_HEAD
-    PyObject *ob_stats;
-    uint64_t ob_sequence;
-    uint64_t ob_region_id;
-    PyObject *ob_weakreflist;
-    PyObject **ob_areas;
-    Py_ssize_t ob_areas_len;
+    PyObject *dr_stats;
+    uint64_t dr_sequence;
+    uint64_t dr_region_id;
+    PyObject *dr_weakreflist;
+    PyObject **dr_areas;
+    Py_ssize_t dr_areas_len;
 } DmStatsRegionObject;
 
 static PyTypeObject DmStatsRegion_Type;
 
 #define DmStatsRegionObject_Check(v)      (Py_TYPE(v) == &DmStatsRegion_Type)
 
-#define DMSTATS_FROM_REGION(r) ((DmStatsObject *)((r)->ob_stats))
-#define DMS_FROM_REGION(r) (DMSTATS_FROM_REGION((r))->ob_dms)
+#define DMSTATS_FROM_REGION(r) ((DmStatsObject *)((r)->dr_stats))
+#define DMS_FROM_REGION(r) (DMSTATS_FROM_REGION((r))->ds_dms)
 
 typedef struct {
     PyObject_HEAD
-    PyObject *ob_stats;
-    uint64_t ob_sequence;
-    PyObject *ob_weakreflist;
-    uint64_t ob_region_id;
-    uint64_t ob_area_id;
+    PyObject *da_stats;
+    uint64_t da_sequence;
+    PyObject *da_weakreflist;
+    uint64_t da_region_id;
+    uint64_t da_area_id;
 } DmStatsAreaObject;
 
 static PyTypeObject DmStatsArea_Type;
 
 #define DmStatsAreaObject_Check(v)      (Py_TYPE(v) == &DmStatsArea_Type)
 
-#define DMSTATS_FROM_AREA(a) ((DmStatsObject *)((a)->ob_stats))
-#define DMS_FROM_AREA(a) (DMSTATS_FROM_AREA((a))->ob_dms)
+#define DMSTATS_FROM_AREA(a) ((DmStatsObject *)((a)->da_stats))
+#define DMS_FROM_AREA(a) (DMSTATS_FROM_AREA((a))->ds_dms)
 
 static void
 DmStats_dealloc(DmStatsObject *self)
 {
-    if (self->ob_dms)
-        dm_stats_destroy(self->ob_dms);
-    self->ob_dms = NULL;
-    if (self->ob_regions) {
-        PyMem_Free(self->ob_regions);
-        self->ob_regions = NULL;
-        self->ob_regions_len = 0;
+    if (self->ds_dms)
+        dm_stats_destroy(self->ds_dms);
+    self->ds_dms = NULL;
+    if (self->ds_regions) {
+        PyMem_Free(self->ds_regions);
+        self->ds_regions = NULL;
+        self->ds_regions_len = 0;
     }
-    self->ob_sequence = UINT64_MAX;
+    self->ds_sequence = UINT64_MAX;
     Py_TYPE(self)->tp_free(self);
 }
 
@@ -1973,10 +1973,10 @@ DmStats_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if (!(obj = (DmStatsObject *) type->tp_alloc(&DmStats_Type, 0)))
         return NULL;
 
-    obj->ob_dms = NULL;
-    obj->ob_sequence = 0;
-    obj->ob_regions = NULL;
-    obj->ob_regions_len = 0;
+    obj->ds_dms = NULL;
+    obj->ds_sequence = 0;
+    obj->ds_regions = NULL;
+    obj->ds_regions_len = 0;
 
     return (PyObject *) obj;
 }
@@ -2009,22 +2009,22 @@ DmStats_init(DmStatsObject *self, PyObject *args, PyObject *kwds)
         }
     }
 
-    self->ob_dms = dm_stats_create(program_id);
+    self->ds_dms = dm_stats_create(program_id);
 
-    if (!self->ob_dms) {
+    if (!self->ds_dms) {
         PyErr_SetString(PyExc_MemoryError, "Failed to allocated "
                         "DmStats handle.");
         return -1;
     }
 
     if (name) {
-        if (!dm_stats_bind_name(self->ob_dms, name)) {
+        if (!dm_stats_bind_name(self->ds_dms, name)) {
             PyErr_SetString(PyExc_OSError, "Failed to bind name to "
                             "DmStatst handle.");
             goto fail;
         }
     } else if (uuid) {
-        if (!dm_stats_bind_uuid(self->ob_dms, uuid)) {
+        if (!dm_stats_bind_uuid(self->ds_dms, uuid)) {
             PyErr_SetString(PyExc_OSError, "Failed to bind uuid to "
                             "DmStatst handle.");
             goto fail;
@@ -2035,7 +2035,7 @@ DmStats_init(DmStatsObject *self, PyObject *args, PyObject *kwds)
                                              "argument.");
             goto fail;
         }
-        if (!dm_stats_bind_devno(self->ob_dms, major, minor)) {
+        if (!dm_stats_bind_devno(self->ds_dms, major, minor)) {
             PyErr_SetString(PyExc_OSError, "Failed to bind devno to "
                             "DmStatst handle.");
             goto fail;
@@ -2048,7 +2048,7 @@ DmStats_init(DmStatsObject *self, PyObject *args, PyObject *kwds)
 
     return 0;
 fail:
-    dm_stats_destroy(self->ob_dms);
+    dm_stats_destroy(self->ds_dms);
     return -1;
 }
 
@@ -2057,11 +2057,11 @@ DmStats_traverse(DmStatsObject *self, visitproc visit, void *arg)
 {
     int i;
 
-    if (!self->ob_regions)
+    if (!self->ds_regions)
         return 0;
 
-    for (i = 0; i < self->ob_regions_len; i++)
-        Py_VISIT(self->ob_regions[i]);
+    for (i = 0; i < self->ds_regions_len; i++)
+        Py_VISIT(self->ds_regions[i]);
     return 0;
 }
 
@@ -2070,11 +2070,11 @@ DmStats_clear(DmStatsObject *self)
 {
     int i;
 
-    if (!self->ob_regions)
+    if (!self->ds_regions)
         return 0;
 
-    for (i = 0; i < self->ob_regions_len; i++)
-        Py_CLEAR(self->ob_regions[i]);
+    for (i = 0; i < self->ds_regions_len; i++)
+        Py_CLEAR(self->ds_regions[i]);
     return 0;
 }
 
@@ -2090,10 +2090,10 @@ DmStats_len(PyObject *o)
     if (!DmStatsObject_Check(o))
         return -1;
 
-    if (!self->ob_dms)
+    if (!self->ds_dms)
         return 0;
 
-    return (Py_ssize_t) dm_stats_get_nr_regions(self->ob_dms);
+    return (Py_ssize_t) dm_stats_get_nr_regions(self->ds_dms);
 }
 
 static DmStatsRegionObject *
@@ -2104,19 +2104,19 @@ _DmStatsRegion_clear_area_cache(DmStatsRegionObject *self)
 {
     int64_t i;
 
-    if (!self->ob_areas)
+    if (!self->dr_areas)
         return;
 
     /* If an area is in the cache, we are holding a reference
      * to the Weakref object that represents it.
      */
-    if (self->ob_areas_len) {
-        for (i = 0; i < self->ob_areas_len; i++)
-            Py_XDECREF(self->ob_areas[i]);
+    if (self->dr_areas_len) {
+        for (i = 0; i < self->dr_areas_len; i++)
+            Py_XDECREF(self->dr_areas[i]);
     }
-    PyMem_Free(self->ob_areas);
-    self->ob_areas = NULL;
-    self->ob_areas_len = 0;
+    PyMem_Free(self->dr_areas);
+    self->dr_areas = NULL;
+    self->dr_areas_len = 0;
 }
 
 static void
@@ -2125,11 +2125,11 @@ _DmStatsRegion_set_area_cache(DmStatsRegionObject *self)
     struct dm_stats *dms = DMS_FROM_REGION(self);
     uint64_t nr_slots;
 
-    nr_slots = dm_stats_get_region_nr_areas(dms, self->ob_region_id);
+    nr_slots = dm_stats_get_region_nr_areas(dms, self->dr_region_id);
     if (nr_slots) {
-        self->ob_areas = PyMem_Malloc(sizeof(PyObject *) * nr_slots);
-        self->ob_areas_len = nr_slots;
-        memset(self->ob_areas, 0, nr_slots * sizeof(PyObject *));
+        self->dr_areas = PyMem_Malloc(sizeof(PyObject *) * nr_slots);
+        self->dr_areas_len = nr_slots;
+        memset(self->dr_areas, 0, nr_slots * sizeof(PyObject *));
     }
 }
 
@@ -2142,28 +2142,28 @@ DmStats_get_item(PyObject *o, Py_ssize_t i)
     if (!DmStatsObject_Check(o))
         return NULL;
 
-    if ((i < 0) || (i >= self->ob_regions_len)) {
+    if ((i < 0) || (i >= self->ds_regions_len)) {
         PyErr_SetString(PyExc_IndexError, "DmStats region_id out of range");
         return NULL;
     }
 
-    if (!dm_stats_region_present(self->ob_dms, i)) {
+    if (!dm_stats_region_present(self->ds_dms, i)) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    if (!self->ob_regions[i]) {
+    if (!self->ds_regions[i]) {
 cache_new:
         /* cache miss */
         region = (PyObject *) newDmStatsRegionObject(o, i);
-        self->ob_regions[i] = PyWeakref_NewRef(region, NULL);
+        self->ds_regions[i] = PyWeakref_NewRef(region, NULL);
         _DmStatsRegion_set_area_cache((DmStatsRegionObject *) region);
     } else {
-        region = PyWeakref_GetObject(self->ob_regions[i]);
+        region = PyWeakref_GetObject(self->ds_regions[i]);
         if (region == Py_None) {
             /* cache hit but referent expired */
-            Py_DECREF(self->ob_regions[i]);
-            self->ob_regions[i] = NULL;
+            Py_DECREF(self->ds_regions[i]);
+            self->ds_regions[i] = NULL;
             goto cache_new;
         }
         /* cache hit */
@@ -2188,12 +2188,12 @@ DmStats_bind_devno(DmStatsObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "ii:bind_devno", &major, &minor))
         return NULL;
 
-    if (!dm_stats_bind_devno(self->ob_dms, major, minor)) {
+    if (!dm_stats_bind_devno(self->ds_dms, major, minor)) {
         PyErr_SetString(PyExc_OSError, "Failed to bind DmStats to devno.");
         return NULL;
     }
 
-    self->ob_sequence++;
+    self->ds_sequence++;
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -2212,12 +2212,12 @@ DmStats_bind_name(DmStatsObject *self, PyObject *args)
         return NULL;
     }
 
-    if (!dm_stats_bind_name(self->ob_dms, name)) {
+    if (!dm_stats_bind_name(self->ds_dms, name)) {
         PyErr_SetString(PyExc_OSError, "Failed to bind DmStats to name.");
         return NULL;
     }
 
-    self->ob_sequence++;
+    self->ds_sequence++;
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -2236,12 +2236,12 @@ DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
         return NULL;
     }
 
-    if (!dm_stats_bind_uuid(self->ob_dms, uuid)) {
+    if (!dm_stats_bind_uuid(self->ds_dms, uuid)) {
         PyErr_SetString(PyExc_OSError, "Failed to bind DmStats to uuid.");
         return NULL;
     }
 
-    self->ob_sequence++;
+    self->ds_sequence++;
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -2254,13 +2254,13 @@ DmStats_bind_uuid(DmStatsObject *self, PyObject *args)
 static PyObject *
 DmStats_nr_regions(DmStatsObject *self, PyObject *args)
 {
-    return Py_BuildValue("i", dm_stats_get_nr_regions(self->ob_dms));
+    return Py_BuildValue("i", dm_stats_get_nr_regions(self->ds_dms));
 }
 
 static PyObject *
 DmStats_nr_groups(DmStatsObject *self, PyObject *args)
 {
-    return Py_BuildValue("i", dm_stats_get_nr_groups(self->ob_dms));
+    return Py_BuildValue("i", dm_stats_get_nr_groups(self->ds_dms));
 }
 
 static PyObject *
@@ -2271,7 +2271,7 @@ DmStats_region_present(DmStatsObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:region_present", &region_id))
         return NULL;
 
-    return Py_BuildValue("i", dm_stats_region_present(self->ob_dms,
+    return Py_BuildValue("i", dm_stats_region_present(self->ds_dms,
                                                       region_id));
 }
 
@@ -2284,8 +2284,8 @@ DmStats_region_nr_areas(DmStatsObject *self, PyObject *args)
         return NULL;
 
     /* FIXME: dm_stats_get_region_nr_areas segfaults on an un-listed handle */
-    if (dm_stats_get_nr_areas(self->ob_dms))
-        val = dm_stats_get_region_nr_areas(self->ob_dms, region_id);
+    if (dm_stats_get_nr_areas(self->ds_dms))
+        val = dm_stats_get_region_nr_areas(self->ds_dms, region_id);
     else
         val = 0;
 
@@ -2295,7 +2295,7 @@ DmStats_region_nr_areas(DmStatsObject *self, PyObject *args)
 static PyObject *
 DmStats_nr_areas(DmStatsObject *self, PyObject *args)
 {
-    return Py_BuildValue("i", dm_stats_get_nr_areas(self->ob_dms));
+    return Py_BuildValue("i", dm_stats_get_nr_areas(self->ds_dms));
 }
 
 static PyObject *
@@ -2306,7 +2306,7 @@ DmStats_group_present(DmStatsObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i:group_present", &group_id))
         return NULL;
 
-    val = dm_stats_group_present(self->ob_dms, group_id);
+    val = dm_stats_group_present(self->ds_dms, group_id);
     return Py_BuildValue("i", val);
 }
 
@@ -2320,7 +2320,7 @@ DmStats_set_sampling_interval(DmStatsObject *self, PyObject *args)
         return NULL;
 
     interval_ns = (uint64_t)(interval * (double) NSEC_PER_SEC);
-    dm_stats_set_sampling_interval_ns(self->ob_dms, interval_ns);
+    dm_stats_set_sampling_interval_ns(self->ds_dms, interval_ns);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -2332,7 +2332,7 @@ DmStats_get_sampling_interval(DmStatsObject *self, PyObject *args)
     uint64_t interval_ns;
     double interval;
 
-    interval_ns = dm_stats_get_sampling_interval_ns(self->ob_dms);
+    interval_ns = dm_stats_get_sampling_interval_ns(self->ds_dms);
     interval = ((double) interval_ns / (double) NSEC_PER_SEC);
 
     return Py_BuildValue("d", interval);
@@ -2354,7 +2354,7 @@ DmStats_set_program_id(DmStatsObject *self, PyObject *args, PyObject *kwds)
                         "without allow_empty=True.");
         return NULL;
     }
-    if (!dm_stats_set_program_id(self->ob_dms, allow_empty, program_id)) {
+    if (!dm_stats_set_program_id(self->ds_dms, allow_empty, program_id)) {
         PyErr_SetString(PyExc_OSError, "Failed to set program_id.");
         return NULL;
     }
@@ -2368,29 +2368,29 @@ _DmStats_clear_region_cache(DmStatsObject *self)
     PyObject *region;
     int64_t i;
 
-    if (!self->ob_regions)
+    if (!self->ds_regions)
         return;
 
     /* If a region is in the cache, we are holding a reference
      * to the Weakref object that represents it: if the reference is
      * still alive, retrive the object and clear its area cache.
      */
-    if (self->ob_regions_len) {
-        for (i = 0; i < self->ob_regions_len; i++) {
-            if (self->ob_regions[i]) {
-                region = PyWeakref_GetObject(self->ob_regions[i]);
+    if (self->ds_regions_len) {
+        for (i = 0; i < self->ds_regions_len; i++) {
+            if (self->ds_regions[i]) {
+                region = PyWeakref_GetObject(self->ds_regions[i]);
                 if (region == Py_None)
                     continue;
                 Py_INCREF(region);
                 _DmStatsRegion_clear_area_cache((DmStatsRegionObject *) region);
                 Py_DECREF(region);
             }
-            Py_XDECREF(self->ob_regions[i]);
+            Py_XDECREF(self->ds_regions[i]);
         }
     }
-    PyMem_Free(self->ob_regions);
-    self->ob_regions = NULL;
-    self->ob_regions_len = 0;
+    PyMem_Free(self->ds_regions);
+    self->ds_regions = NULL;
+    self->ds_regions_len = 0;
 }
 
 static void
@@ -2399,7 +2399,7 @@ _DmStats_set_region_cache(DmStatsObject *self)
     struct dm_stats *dms;
     uint64_t nr_slots, region_id, max_region = 0;
 
-    dms = self->ob_dms;
+    dms = self->ds_dms;
 
     if (dm_stats_get_nr_areas(dms)) {
         dm_stats_foreach_region(dms) {
@@ -2407,9 +2407,9 @@ _DmStats_set_region_cache(DmStatsObject *self)
             max_region = (region_id > max_region) ? region_id : max_region;
         }
         nr_slots = max_region + 1;
-        self->ob_regions = PyMem_Malloc(sizeof(PyObject *) * nr_slots);
-        self->ob_regions_len = nr_slots;
-        memset(self->ob_regions, 0, nr_slots * sizeof(PyObject *));
+        self->ds_regions = PyMem_Malloc(sizeof(PyObject *) * nr_slots);
+        self->ds_regions_len = nr_slots;
+        memset(self->ds_regions, 0, nr_slots * sizeof(PyObject *));
     }
 }
 
@@ -2425,12 +2425,12 @@ DmStats_list(DmStatsObject *self, PyObject *args, PyObject *kwds)
 
     _DmStats_clear_region_cache(self);
 
-    if (!dm_stats_list(self->ob_dms, program_id)) {
+    if (!dm_stats_list(self->ds_dms, program_id)) {
         PyErr_SetString(PyExc_OSError, "Failed to get region list from "
                         "device-mapper.");
         return NULL;
     }
-    self->ob_sequence++;
+    self->ds_sequence++;
     _DmStats_set_region_cache(self);
 
     Py_INCREF(self);
@@ -2449,12 +2449,12 @@ DmStats_populate(DmStatsObject *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     _DmStats_clear_region_cache(self);
-    if (!dm_stats_populate(self->ob_dms, program_id, region_id)) {
+    if (!dm_stats_populate(self->ds_dms, program_id, region_id)) {
         PyErr_SetString(PyExc_OSError, "Failed to get region data from "
                         "device-mapper.");
         return NULL;
     }
-    self->ob_sequence++;
+    self->ds_sequence++;
     _DmStats_set_region_cache(self);
 
     Py_INCREF(self);
@@ -2477,7 +2477,7 @@ DmStats_create_region(DmStatsObject *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     errno = 0;
-    r = dm_stats_create_region(self->ob_dms, &region_id, start, len, step,
+    r = dm_stats_create_region(self->ds_dms, &region_id, start, len, step,
                                precise, bounds, program_id, user_data);
 
     if (!r) {
@@ -2494,7 +2494,7 @@ DmStats_create_region(DmStatsObject *self, PyObject *args, PyObject *kwds)
 
 static int _DmStats_delete_region(DmStatsObject *self, uint64_t region_id)
 {
-    if (!dm_stats_region_present(self->ob_dms, region_id)) {
+    if (!dm_stats_region_present(self->ds_dms, region_id)) {
         PyErr_Format(PyExc_IndexError, "mStats region_id " FMTu64
                      " does not exist.", region_id);
         goto fail;
@@ -2502,7 +2502,7 @@ static int _DmStats_delete_region(DmStatsObject *self, uint64_t region_id)
 
     errno = 0;
 
-    if (!dm_stats_delete_region(self->ob_dms, region_id)) {
+    if (!dm_stats_delete_region(self->ds_dms, region_id)) {
         if (errno)
             PyErr_SetFromErrno(PyExc_OSError);
         else
@@ -2664,19 +2664,19 @@ static PyMethodDef DmStats_methods[] = {
 
 #define DMSTATS__doc__ \
 "Base class representing a device-mapper statistics handle.\n\n"            \
-"Operations on dm_stats objects include managing statistics regions\n"      \
+"Operations on DmStats objects include managing statistics regions\n"       \
 "and obtaining and manipulating current counter values from the\n"          \
 "kernel. Methods are provided to return baisc count values and to\n"        \
 "derive time-based metrics when a suitable interval estimate is\n"          \
 "provided.\n\n"                                                             \
                                                                             \
-"Internally the dm_stats handle contains a pointer to a table of one\n"     \
-"or more dm_stats_region objects representing the regions registered\n"     \
+"Internally the DmStats handle contains a pointer to a table of one\n"      \
+"or more DmStatsRegion objects representing the regions registered\n"       \
 "with the DmStats.create_region() method. These in turn point to a\n"       \
-"table of one or more dm_stats_counters objects containing the\n"           \
+"table of one or more DmStatsCounters objects containing the\n"             \
 "counter sets for each defined area within the region:\n\n"                 \
                                                                             \
-"DmStats[nr_reginos]->DmStatsRegion[nr_areas]->DmStatsArea\n\n"             \
+"DmStats[nr_regions]->DmStatsRegion[nr_areas]->DmStatsArea\n\n"             \
                                                                             \
 "Regions and counter sets are stored in order of increasing region_id.\n"   \
 "Depending on region specifications and the sequence of create and\n"       \
@@ -2685,7 +2685,7 @@ static PyMethodDef DmStats_methods[] = {
 "unless region creation is deliberately managed to ensure this (by\n"       \
 "always creating regions in strict order of ascending sector address).\n\n" \
                                                                             \
-"Regions may also overlap so the same sector range may be included in\n"    \
+"Regions may also overlap, so the same sector range may be included in\n"   \
 "more than one region or area: applications should be prepared to deal\n"   \
 "with this or manage regions such that it does not occur."
 
@@ -2739,11 +2739,11 @@ static void
 DmStatsRegion_dealloc(DmStatsRegionObject *self)
 {
     /* Notify our parent that we are departing. */
-    if (self->ob_weakreflist)
+    if (self->dr_weakreflist)
         PyObject_ClearWeakRefs((PyObject *) self);
 
     /* release our reference on the parent DmStats. */
-    Py_DECREF(self->ob_stats);
+    Py_DECREF(self->dr_stats);
     return;
 }
 
@@ -2752,10 +2752,10 @@ newDmStatsRegionObject(PyObject *stats, uint64_t region_id)
 {
     DmStatsRegionObject *region;
     region = PyObject_GC_New(DmStatsRegionObject, &DmStatsRegion_Type);
-    region->ob_region_id = region_id;
-    region->ob_sequence = ((DmStatsObject *)stats)->ob_sequence;
-    region->ob_weakreflist = NULL;
-    region->ob_stats = stats;
+    region->dr_region_id = region_id;
+    region->dr_sequence = ((DmStatsObject *)stats)->ds_sequence;
+    region->dr_weakreflist = NULL;
+    region->dr_stats = stats;
 
     /* We keep a reference on the parent DmStats to prevent it (and its handle)
      * from being deallocated.
@@ -2770,26 +2770,26 @@ DmStatsRegion_init(DmStatsRegionObject *self, PyObject *args, PyObject *kwds)
     uint64_t region_id;
     if (!PyArg_ParseTuple(args, "i:__init__", &region_id))
         return -1;
-    self->ob_region_id = region_id;
+    self->dr_region_id = region_id;
     return 0;
 }
 
 static int
 DmStatsRegion_traverse(DmStatsRegionObject *self, visitproc visit, void *arg)
 {
-    Py_VISIT(self->ob_stats);
+    Py_VISIT(self->dr_stats);
     return 0;
 }
 
 static int
 DmStatsRegion_clear(DmStatsRegionObject *self)
 {
-    Py_CLEAR(self->ob_stats);
+    Py_CLEAR(self->dr_stats);
     return 0;
 }
 
 /* Check the sequence number for this DmStatsRegion against its parent.
- * The ob_sequence value stored in DmStats is initialised to zero, and
+ * The ds_sequence value stored in DmStats is initialised to zero, and
  * incremented on each operation that invalidates the handle's tables
  * (bind, list, populate).
  *
@@ -2808,7 +2808,7 @@ _DmStatsRegion_sequence_check(PyObject *o)
 
     stats = DMSTATS_FROM_REGION(self);
 
-    if (self->ob_sequence != stats->ob_sequence) {
+    if (self->dr_sequence != stats->ds_sequence) {
         PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
                         " changed DmStats object.");
         return -1;
@@ -2838,7 +2838,7 @@ DmStatsRegion_len(PyObject *o)
     if (!dms)
         return 0;
 
-    return (Py_ssize_t) dm_stats_get_region_nr_areas(dms, self->ob_region_id);
+    return (Py_ssize_t) dm_stats_get_region_nr_areas(dms, self->dr_region_id);
 }
 
 static DmStatsAreaObject *
@@ -2848,8 +2848,8 @@ static PyObject *
 DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
 {
     DmStatsRegionObject *self = (DmStatsRegionObject *) o;
-    DmStatsObject *stats = (DmStatsObject *) self->ob_stats;
-    uint64_t i = self->ob_region_id;
+    DmStatsObject *stats = (DmStatsObject *) self->dr_stats;
+    uint64_t i = self->dr_region_id;
     PyObject *area;
 
     if (!DmStatsRegionObject_Check(o))
@@ -2857,7 +2857,7 @@ DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
 
     DmStatsRegion_SeqCheck(o);
 
-    if ((j < 0) || (j >= self->ob_areas_len)) {
+    if ((j < 0) || (j >= self->dr_areas_len)) {
         PyErr_SetString(PyExc_IndexError, "DmStats area_id out of range");
         return NULL;
     }
@@ -2867,22 +2867,22 @@ DmStatsRegion_get_item(PyObject *o, Py_ssize_t j)
      * that is later changed to return a singleton "null region", then
      * the following presence check ensures correct behaviour.
      */
-    if (!dm_stats_region_present(stats->ob_dms, self->ob_region_id)) {
+    if (!dm_stats_region_present(stats->ds_dms, self->dr_region_id)) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    if (!self->ob_areas[j]) {
+    if (!self->dr_areas[j]) {
 cache_new:
         /* cache miss */
         area = (PyObject *) newDmStatsAreaObject((PyObject *) stats, i, j);
-        self->ob_areas[j] = PyWeakref_NewRef(area, NULL);
+        self->dr_areas[j] = PyWeakref_NewRef(area, NULL);
     } else {
-        area = PyWeakref_GetObject(self->ob_areas[j]);
+        area = PyWeakref_GetObject(self->dr_areas[j]);
         if (area == Py_None) {
             /* cache hit but referent expired */
-            Py_DECREF(self->ob_areas[j]);
-            self->ob_areas[j] = NULL;
+            Py_DECREF(self->dr_areas[j]);
+            self->dr_areas[j] = NULL;
             goto cache_new;
         }
         /* cache hit */
@@ -2906,7 +2906,22 @@ static PySequenceMethods DmStatsRegion_sequence_methods = {
 "Base class representing a region of a device-mapper statistics handle,\n"  \
 "including any areas and counters contained within it.\n\n"                 \
 
+static PyObject *
+DmStatsRegion_delete(DmStatsRegionObject *self, void *arg)
+{
+    if (_DmStats_delete_region((DmStatsObject *) self->dr_stats,
+                               self->dr_region_id))
+        return NULL;
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+#define DMSTATSREG_delete__doc__ \
+"Delete this region."
+
 static PyMethodDef DmStatsRegion_methods[] = {
+    {"delete", (PyCFunction)DmStatsRegion_delete, METH_NOARGS,
+        PyDoc_STR(DMSTATSREG_delete__doc__)},
     {NULL, NULL}
 };
 
@@ -2919,7 +2934,7 @@ DmStatsRegion_nr_areas_getter(PyObject *self, void *arg)
 
     DmStatsRegion_SeqCheck(self);
 
-    nr_areas = dm_stats_get_region_nr_areas(stats->ob_dms, reg->ob_region_id);
+    nr_areas = dm_stats_get_region_nr_areas(stats->ds_dms, reg->dr_region_id);
     return Py_BuildValue("i", nr_areas);
 }
 
@@ -2932,7 +2947,7 @@ DmStatsRegion_present_getter(PyObject *self, void *arg)
 
     DmStatsRegion_SeqCheck(self);
 
-    ret = (dm_stats_region_present(dms, reg->ob_region_id))
+    ret = (dm_stats_region_present(dms, reg->dr_region_id))
         ? Py_True : Py_False;
     Py_INCREF(ret);
     return ret;
@@ -2947,7 +2962,7 @@ DmStatsRegion_precise_timestamps_getter(PyObject *self, void *arg)
 
     DmStatsRegion_SeqCheck(self);
 
-    ret = (dm_stats_get_region_precise_timestamps(dms, reg->ob_region_id))
+    ret = (dm_stats_get_region_precise_timestamps(dms, reg->dr_region_id))
         ? Py_True : Py_False;
     Py_INCREF(ret);
     return ret;
@@ -2964,8 +2979,8 @@ DmStatsRegion_ ## name ##_getter(PyObject *self, void *arg)                  \
                                                                              \
     DmStatsRegion_SeqCheck(self);                                            \
                                                                              \
-    r = dm_stats_get_region_ ## name(stats->ob_dms, &name,                   \
-                                     reg->ob_region_id);                     \
+    r = dm_stats_get_region_ ## name(stats->ds_dms, &name,                   \
+                                     reg->dr_region_id);                     \
     if (!r) {                                                                \
         PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "     \
                         "state: no region data.");                           \
@@ -2987,8 +3002,8 @@ DmStatsRegion_program_id_getter(PyObject *self, void *arg)
 
     DmStatsRegion_SeqCheck(self);
 
-    program_id = dm_stats_get_region_program_id(stats->ob_dms,
-                                                reg->ob_region_id);
+    program_id = dm_stats_get_region_program_id(stats->ds_dms,
+                                                reg->dr_region_id);
 
     return Py_BuildValue("z", program_id);
 }
@@ -3002,8 +3017,8 @@ DmStatsRegion_aux_data_getter(PyObject *self, void *arg)
 
     DmStatsRegion_SeqCheck(self);
 
-    aux_data = dm_stats_get_region_aux_data(stats->ob_dms,
-                                            reg->ob_region_id);
+    aux_data = dm_stats_get_region_aux_data(stats->ds_dms,
+                                            reg->dr_region_id);
 
     return Py_BuildValue("z", aux_data);
 }
@@ -3055,7 +3070,7 @@ static PyGetSetDef DmStatsRegion_getsets[] = {
 };
 
 static PyMemberDef DmStatsRegion_members[] = {
-    {"region_id", T_LONG, offsetof(DmStatsRegionObject, ob_region_id),
+    {"region_id", T_LONG, offsetof(DmStatsRegionObject, dr_region_id),
      READONLY, PyDoc_STR("The region identifier of this region.")},
     {NULL}
 };
@@ -3088,7 +3103,7 @@ static PyTypeObject DmStatsRegion_Type = {
     (traverseproc) DmStatsRegion_traverse, /*tp_traverse*/
     (inquiry) DmStatsRegion_clear, /*tp_clear*/
     0,                          /*tp_richcompare*/
-    offsetof(DmStatsRegionObject, ob_weakreflist), /*tp_weaklistoffset*/
+    offsetof(DmStatsRegionObject, dr_weakreflist), /*tp_weaklistoffset*/
     0,                          /*tp_iter*/
     0,                          /*tp_iternext*/
     DmStatsRegion_methods,      /*tp_methods*/
@@ -3111,11 +3126,11 @@ static void
 DmStatsArea_dealloc(DmStatsAreaObject *self)
 {
     /* Notify our parent that we are departing. */
-    if (self->ob_weakreflist)
+    if (self->da_weakreflist)
         PyObject_ClearWeakRefs((PyObject *) self);
 
     /* release our reference on the parent DmStats. */
-    Py_DECREF(self->ob_stats);
+    Py_DECREF(self->da_stats);
     return;
 }
 
@@ -3124,11 +3139,11 @@ newDmStatsAreaObject(PyObject *stats, uint64_t region_id, uint64_t area_id)
 {
     DmStatsAreaObject *area;
     area = PyObject_GC_New(DmStatsAreaObject, &DmStatsArea_Type);
-    area->ob_region_id = region_id;
-    area->ob_area_id = area_id;
-    area->ob_weakreflist = NULL;
-    area->ob_stats = stats;
-    area->ob_sequence = ((DmStatsObject *) stats)->ob_sequence;
+    area->da_region_id = region_id;
+    area->da_area_id = area_id;
+    area->da_weakreflist = NULL;
+    area->da_stats = stats;
+    area->da_sequence = ((DmStatsObject *) stats)->ds_sequence;
 
     /* We keep a reference on the parent DmStats to prevent it (and its handle)
      * from being deallocated.
@@ -3143,12 +3158,12 @@ DmStatsArea_init(DmStatsAreaObject *self, PyObject *args, PyObject *kwds)
     uint64_t area_id;
     if (!PyArg_ParseTuple(args, "i:__init__", &area_id))
         return -1;
-    self->ob_area_id = area_id;
+    self->da_area_id = area_id;
     return 0;
 }
 
 /* Check the sequence number for this DmStatsArea against its parent.
- * The ob_sequence value stored in DmStats is initialised to zero, and
+ * The ds_sequence value stored in DmStats is initialised to zero, and
  * incremented on each operation that invalidates the handle's tables
  * (bind, list, populate).
  *
@@ -3167,7 +3182,7 @@ _DmStatsArea_sequence_check(PyObject *o)
 
     stats = DMSTATS_FROM_AREA(self);
 
-    if (self->ob_sequence != stats->ob_sequence) {
+    if (self->da_sequence != stats->ds_sequence) {
         PyErr_SetString(PyExc_LookupError, "Attempt to access regions in"
                         " changed DmStats object.");
         return -1;
@@ -3191,8 +3206,8 @@ DmStatsArea_ ## name ##_getter(DmStatsAreaObject *self, void *arg)            \
                                                                               \
     DmStatsArea_SeqCheck(self);                                               \
                                                                               \
-    r = dm_stats_get_area_ ## name(stats->ob_dms, &name,                      \
-                                     self->ob_region_id, self->ob_area_id);   \
+    r = dm_stats_get_area_ ## name(stats->ds_dms, &name,                      \
+                                     self->da_region_id, self->da_area_id);   \
     if (!r) {                                                                 \
         PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "      \
                         "state: no region data.");                            \
@@ -3213,7 +3228,7 @@ DmStatsArea_len_getter(DmStatsAreaObject *self, void *arg)
 
     DmStatsArea_SeqCheck(self);
 
-    r = dm_stats_get_region_area_len(stats->ob_dms, &len, self->ob_region_id);
+    r = dm_stats_get_region_area_len(stats->ds_dms, &len, self->da_region_id);
     if (!r) {
         PyErr_SetString(PyExc_SystemError, "Unexpected dm_stats handle "
                         "state: no region data.");
@@ -3225,7 +3240,7 @@ DmStatsArea_len_getter(DmStatsAreaObject *self, void *arg)
 static PyObject *
 DmStatsArea_region_getter(DmStatsAreaObject *self, void *arg)
 {
-    return DmStats_get_item(self->ob_stats, self->ob_region_id);
+    return DmStats_get_item(self->da_stats, self->da_region_id);
 }
 
 static PyObject *
@@ -3240,8 +3255,8 @@ DmStatsArea_counter_getter(DmStatsAreaObject *self, void *arg)
     }
 
     return Py_BuildValue("l", dm_stats_get_counter(dms, counter,
-                                                   self->ob_region_id,
-                                                   self->ob_area_id));
+                                                   self->da_region_id,
+                                                   self->da_area_id));
 }
 
 static PyObject *
@@ -3257,7 +3272,7 @@ DmStatsArea_metric_getter(DmStatsAreaObject *self, void *arg)
     }
 
     if (!dm_stats_get_metric(dms, metric,
-                             self->ob_region_id, self->ob_area_id, &value)) {
+                             self->da_region_id, self->da_area_id, &value)) {
         PyErr_SetString(PyExc_OSError, "Failed to get metric data from "
                         "device-mapper.");
         return NULL;
@@ -3373,7 +3388,7 @@ static PyMethodDef DmStatsArea_methods[] = {
 };
 
 static PyMemberDef DmStatsArea_members[] = {
-    {"area_id", T_LONG, offsetof(DmStatsAreaObject, ob_area_id),
+    {"area_id", T_LONG, offsetof(DmStatsAreaObject, da_area_id),
      READONLY, PyDoc_STR("The area identifier of this area.")},
     {NULL}
 };
@@ -3406,7 +3421,7 @@ static PyTypeObject DmStatsArea_Type = {
     0,                          /*tp_traverse*/
     0,                          /*tp_clear*/
     0,                          /*tp_richcompare*/
-    offsetof(DmStatsAreaObject, ob_weakreflist), /*tp_weaklistoffset*/
+    offsetof(DmStatsAreaObject, da_weakreflist), /*tp_weaklistoffset*/
     0,                          /*tp_iter*/
     0,                          /*tp_iternext*/
     DmStatsArea_methods,        /*tp_methods*/
@@ -3739,7 +3754,7 @@ _dmpy_udev_create_cookie(PyObject *self, PyObject *args)
     if (_DmCookie_init(cookie, cookie_val))
         return NULL;
 
-    cookie->ob_cookie = cookie_val;
+    cookie->ck_cookie = cookie_val;
     _dmpy_set_cookie_values(cookie);
     return (PyObject *) cookie;
 }
