@@ -3,7 +3,7 @@
 1. [Overview](#s1)
 1. [Mapping the dmstats API to Python](#s2)
 1. [DmPy reference counting and caching](#s3)
-  1.1 [DmStats sequence numbers](#s3.1)
+   1. [DmStats sequence numbers](#s3.1)
 1. [DmTask API state flags](#s4)
 
 ## 1. Overview <a name="s1"/></a>
