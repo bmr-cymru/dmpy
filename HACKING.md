@@ -7,13 +7,13 @@
 1. [DmTask API state flags](#s4)
 
 ## 1. Overview <a name="s1"/></a>
-This file explains the object structure, reference counting and caching
-scheme used by the DmPy Python bindings for device-mapper, and is useful
-for anyone wishing to extend the bindings or modify or extend the Python
-container classes provided by the library using the C interface (users
-wishing to use or extend the classes in Python itself do not need to
-worry about these details: the provided classes conform to normal Python
-reference counting behaviour).
+This file explains the object structure, reference counting, and caching
+scheme used by the DmPy Python bindings for device-mapper. It is intended
+to be useful for anyone wishing to extend the bindings or modify or
+extend the Python container classes provided by the library using the C
+interface (users wishing to use or extend the classes in Python itself
+do not need to worry about these details: the provided classes conform
+to normal Python reference counting behaviour).
 
 
 ## 2. Mapping the dmstats API to Python <a name="s2"/></a>
@@ -37,7 +37,7 @@ Internally they form a tree-like structure rooted in an instance of type
 
 The C API only exports this structure via C function calls acting on the
 `dm_stats` and `dm_histogram` handles (effectively methods of the
-`dm_stats` and `dm_histogram` types: region, area and bin indices are
+`dm_stats` and `dm_histogram` types; region, area and bin indices are
 parameters of these methods).
 
 It is desirable to expose this structure in the Python API as a set of
@@ -71,15 +71,15 @@ C type object.
 
 
 ## 3. DmPy reference counting and caching <a name="s3"/></a>
-Since Python is a garbage collected language objects in the Python type
+Since Python is a garbage collected language, objects in the Python type
 system are reference counted: objects with a reference count of zero are
 subject to possible garbage collection and disposal at any time. To
 prevent access to memory that has already been deallocated, objects that
 depend on accessing other objects for their state must maintain a
 reference to those objects to prevent their deallocation.
 
-Like other garbage collected languages Python supports the notion of
-both strong and weak references; a strong reference prevents garbage
+Like other garbage collected languages, Python supports the notion of
+both strong and weak references: a strong reference prevents garbage
 collection, where a weak reference does not. A weak reference can return
 a reference to the referent object if it still exists, or an error
 indicating that the object has already been destroyed. Strong and weak
@@ -88,7 +88,7 @@ which would otherwise delay the deallocation of some resources
 indefinitely.
 
 Mixtures of strong and weak references are frequently used in data
-structures such as lists, trees, graphs and complex aggregate objects
+structures such as lists, trees, graphs, and complex aggregate objects
 where the possibility of cyclical references exists.
 
 Many conventional tree-like structures are able to implement a scheme in
@@ -98,24 +98,24 @@ tree (toward their parents). This gives the desired behaviour in the
 case that the root node "owns" the nodes at lower levels, for example an
 aggregate structure where operations on the root object will need to
 access nodes holding resources at lower levels of the tree. The classic
-example is the HTML DOM: a page is rendered beginning at the document
-root, and proceeding through the various resources represented by
-lower-level nodes in the hierarchy. Child nodes cannot be deallocated
-until the parent releases its strong reference and children are unable
-to keep parent nodes alive and in-memory since they posess only a weak
-reference.
+example is the HTML Document Object Model (DOM): a page is rendered
+beginning at the document root, and proceeding through the various
+resources represented by lower-level nodes in the hierarchy. Child nodes
+cannot be deallocated until the parent releases its strong reference and
+children are unable to keep parent nodes alive and in-memory since they
+possess only a weak reference.
 
 This is the reverse of the situation in DmPy for DmStats compound
 objects: in this instance, it is the root `dm_stats` object that holds
 all the resources used by nodes further down in the structure: Python
-objects such as DmStatsRegion and DmStatsArea must obtain data from the
-original `dm_stats` handle that is contained in the DmStats object from
-which they were instantiated (their parent or containing DmStats
+objects such as `DmStatsRegion` and `DmStatsArea` must obtain data from
+the original `dm_stats` handle that is contained in the `DmStats` object
+from which they were instantiated (their parent or containing `DmStats`
 object) as they are simple shims with no state of their own.
 
 In this situation it is insufficient for the child nodes to hold a weak
 reference: this allows a situation where the reference count on the
-containing DmStats object reaches zero while children are still
+containing `DmStats` object reaches zero while children are still
 oustanding with non-zero reference counts:
 
 ```python
@@ -138,23 +138,24 @@ reference is still alive the existing object is returned.  A new object
 is only created if no weak reference is found in the cache, or if the
 reference is found to be stale.
 
-With this approach the above reference counting problem becomes
-impossible: even though the user has dropped their reference to 'dms',
+With this approach the above reference counting problem can no longer
+occur: even though the user has dropped their reference to 'dms',
 the 'region' instance of DmStatsRegion is itself holding a strong
-reference to this object.
+reference to this object and deallocation cannot take place until it
+has been released.
 
-Each object in the DmStats hierarchy that behaves as a container
+Each object in the `DmStats` hierarchy that behaves as a container
 implements the same caching scheme: new code implementing a container
 type should adopt a similar approach when data from the base `dm_stats`
 handle or another native dmstats type must be exported.
 
 ### 3.1 DmStats sequence numbers <a name="s3.1"/></a>
 Although the reference count maintained by child objects prevents the
-deallocation of a `DmStats` object, the state is mutable and may be
-altered in ways that invalidate the state of child objects that
+deallocation of a `DmStats` object, the object's state is mutable and
+may be altered in ways that invalidate the state of child objects that
 reference it. Attempting to access the `DmStats` object with the
-parameters stored in the child may cause illegal memory references if
-those regions or areas no longer exist.
+original parameters stored in the child may cause illegal memory
+references if those regions or areas no longer exist.
 
 To prevent child objects attempting to access data when this occurs each
 `DmStats` object stores a sequence number that is incremented every time
@@ -171,13 +172,13 @@ and their states: the type contains fields for both input and output and
 expects users of the API to understand numerous rules regarding their
 usage (for example, that data returned by an `ioctl` will only be
 available once that `ioctl` has been issued, and the particular items of
-data that will be valid following a spefific `ioctl` command).
+data that will be valid following a specific `ioctl` command).
 
-As with most C APIs failing to adhere to the API rules will result in
+As with most C APIs, failing to adhere to the API rules will result in
 undefined behaviour and may cause the Python interpreter to generate
 segmentation faults or other memory access errors.
 
-To allow Python users to safely access this interface the bindings
+To allow Python users to safely access this interface, the bindings
 maintain a simple state field consisting of flags for `ioctl` states.
 Flags are divided into state and data: state flags indicate that
 something occurred (an `ioctl` was issued, or an error was returned) and
@@ -206,12 +207,12 @@ now valid:
 A table is maintained mapping each possible `ioctl` command to the set of
 data flags that should be set on return from a successful `ioctl`.
 
-State and data flags are set by the `DmTask.run()` method; attributes and
-other methods that must access the data guarded by these flags should
-inspect the flags and raise `TypeError` if the request is invalid for the
-current task type or state. A helper function,
-`_DmTask_check_data_flags()` is provided that will check that an ioctl has
-been run, and that the given flags are now set. On error `TypeError` is
-raised and the exception message is set to a string describing the task
-type and what data is missing.
+State and data flags are set by the `DmTask.run()` method; attributes
+and other methods that must access the data guarded by these flags
+should inspect the flags and raise `TypeError` if the request is invalid
+for the current task type or state. A helper function,
+`_DmTask_check_data_flags()`, is provided that will check that an
+`ioctl` has been run and that the given flags are now set. On error
+`TypeError` is raised and the exception message is set to a string
+describing the task type and what data is missing.
 
