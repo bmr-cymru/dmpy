@@ -756,6 +756,11 @@ DmTask_init(DmTaskObject *self, PyObject *args, PyObject *kwds)
     self->ck_cookie = NULL;
     self->tk_flags = 0;
 
+    if (type < 0 || type > DM_DEVICE_SET_GEOMETRY) {
+        PyErr_Format(PyExc_TypeError, "Invalid DmTask type: %d", type);
+        return -1;
+    }
+
     if (!(self->tk_dmt = dm_task_create(type))) {
         /* FIXME: use dm_task_get_errno */
         PyErr_SetFromErrno(PyExc_OSError);

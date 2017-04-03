@@ -493,6 +493,13 @@ class DmpyTests(unittest.TestCase):
         for ttype in task_types:
             dmt = dm.DmTask(ttype)
 
+    def test_dm_task_type_invalid_new(self):
+        # test that creation of an invalid DmTask type fails.
+        import dmpy as dm
+        dmt = None
+        with self.assertRaises(TypeError) as cm:
+            dmt = dm.DmTask(2323)
+
     def _test_empty_task_method_raises(self, method):
         # Issue a DM_DEVICE_VERSION (which returns nothing but the driver
         # version), and then attempt to call `method`, which should be the
