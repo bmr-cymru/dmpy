@@ -12,7 +12,7 @@ e.g.:
   dm_task_set_name() -> dmpy.DmTask.set_name()
 ```
 
-The dmpy project is [hosted on GitGub][0].
+The dmpy project is [hosted on GitHub][0].
 
 ## Reporting bugs
 Bugs can be reported at the [GitHub Issue Tracker][1], or via the
